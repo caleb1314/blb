@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Notification Center</title>
+    <style>
+        :root {
+            --bg-color: #F2F2F7;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --text-primary: #000000;
+            --text-secondary: #8E8E93;
+            --accent-blue: #007AFF;
+            --accent-green: #34C759;
+            --accent-red: #FF3B30;
+            --separator: rgba(60, 60, 67, 0.18);
+            --blur: 20px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000;
+                --card-bg: rgba(28, 28, 30, 0.8);
+                --text-primary: #FFFFFF;
+                --text-secondary: #98989D;
+                --separator: rgba(84, 84, 88, 0.35);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 60px;
+        }
+
+        /* 顶部导航栏 */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--card-bg);
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            border-bottom: 0.5px solid var(--separator);
+            z-index: 1000;
+            padding-top: env(safe-area-inset-top);
+            height: calc(44px + env(safe-area-inset-top));
+        }
+
+        .header h1 {
+            font-size: 17px;
+            font-weight: 600;
+            margin: 0;
+            margin-top: env(safe-area-inset-top);
+        }
+
+        /* 主容器 */
+        .container {
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 40px;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            position: relative;
+        }
+
+        .list-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            left: 52px; /* 图标宽度 + 间距 */
+            height: 0.5px;
+            background-color: var(--separator);
+        }
+
+        .item-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+
+        .item-icon.green { background: var(--accent-green); }
+        .item-icon.red { background: var(--accent-red); }
+        .item-icon.gray { background: var(--text-secondary); }
+
+        .item-icon svg {
+            width: 16px;
+            height: 16px;
+            stroke: white;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .item-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-title {
+            font-size: 16px;
+            font-weight: 400;
+        }
+
+        .item-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* 按钮样式 */
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--accent-blue);
+            font-size: 16px;
+            font-weight: 400;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .action-btn:active {
+            opacity: 0.6;
+        }
+
+        .ios-switch {
+            position: relative;
+            display: inline-block;
+            width: 51px;
+            height: 31px;
+        }
+
+        .ios-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #E9E9EA;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 27px;
+            width: 27px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-green);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        /* 说明文字 */
+        .note {
+            font-size: 13px;
+            color: var(--text-secondary);
+            padding: 0 16px;
+            line-height: 1.4;
+        }
+
+        /* 浮动提示 */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(50, 50, 50, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 14px;
+            font-size: 15px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 2000;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>通知控制台</h1>
+    </div>
+
+    <div class="container">
+        
+        <div class="note">
+            iOS 用户请点击分享按钮，选择“添加到主屏幕”以启用通知权限。
+        </div>
+
+        <div class="card">
+            <div class="list-item">
+                <div class="item-icon blue">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                </div>
+                <div class="item-content">
+                    <span class="item-title">通知权限</span>
+                    <span class="item-subtitle" id="perm-status">检查中...</span>
+                </div>
+                <label class="ios-switch">
+                    <input type="checkbox" id="perm-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="list-item">
+                <div class="item-icon green">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+                <div class="item-content">
+                    <span class="item-title">Service Worker</span>
+                    <span class="item-subtitle" id="sw-status">未注册</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="list-item" onclick="triggerNotification(5)">
+                <div class="item-icon gray">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+                <div class="item-content">
+                    <span class="item-title">发送延时通知</span>
+                    <span class="item-subtitle">5秒后发送（请切到后台）</span>
+                </div>
+                <button class="action-btn">测试</button>
+            </div>
+
+            <div class="list-item" onclick="triggerNotification(0)">
+                <div class="item-icon gray">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M22 2L11 13"></path>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </div>
+                <div class="item-content">
+                    <span class="item-title">立即发送</span>
+                    <span class="item-subtitle">前台直接弹窗</span>
+                </div>
+                <button class="action-btn">发送</button>
+            </div>
+        </div>
+
+        <div class="note" style="text-align: center; margin-top: 10px;">
+            Designed by Hajimi
+        </div>
+
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Service Worker 代码模板 (作为字符串存储) -->
+    <script id="sw-source" type="javascript/worker">
+        self.addEventListener('install', (event) => {
+            self.skipWaiting();
+            console.log('SW Installed');
+        });
+
+        self.addEventListener('activate', (event) => {
+            event.waitUntil(self.clients.claim());
+            console.log('SW Activated');
+        });
+
+        // 监听来自页面的消息
+        self.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'NOTIFY') {
+                const title = event.data.title || '新消息';
+                const options = {
+                    body: event.data.body || '这是来自后台的通知',
+                    icon: 'https://via.placeholder.com/128', // 可替换为你的图标URL
+                    badge: 'https://via.placeholder.com/128',
+                    vibrate: [100, 50, 100],
+                    data: {
+                        dateOfArrival: Date.now(),
+                        primaryKey: 1
+                    }
+                };
+
+                // 延时发送模拟
+                setTimeout(() => {
+                    self.registration.showNotification(title, options);
+                }, event.data.delay || 0);
+            }
+        });
+
+        self.addEventListener('notificationclick', function(event) {
+            event.notification.close();
+            // 点击通知打开页面
+            event.waitUntil(
+                clients.matchAll({type: 'window'}).then( windowClients => {
+                    for (var i = 0; i < windowClients.length; i++) {
+                        var client = windowClients[i];
+                        if (client.url === '/' && 'focus' in client) {
+                            return client.focus();
+                        }
+                    }
+                    if (clients.openWindow) {
+                        return clients.openWindow('/');
+                    }
+                })
+            );
+        });
+    </script>
+
+    <script>
+        // UI 元素
+        const permToggle = document.getElementById('perm-toggle');
+        const permStatus = document.getElementById('perm-status');
+        const swStatus = document.getElementById('sw-status');
+        const toastEl = document.getElementById('toast');
+
+        // 显示 Toast
+        function showToast(msg) {
+            toastEl.textContent = msg;
+            toastEl.classList.add('show');
+            setTimeout(() => toastEl.classList.remove('show'), 2000);
+        }
+
+        // 注册 Service Worker (使用 Blob 绕过单文件限制)
+        async function registerSW() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const swContent = document.getElementById('sw-source').textContent;
+                    const blob = new Blob([swContent], {type: 'text/javascript'});
+                    const swUrl = URL.createObjectURL(blob);
+                    
+                    const registration = await navigator.serviceWorker.register(swUrl);
+                    swStatus.textContent = '已激活 (Blob Mode)';
+                    swStatus.style.color = 'var(--accent-green)';
+                    return registration;
+                } catch (error) {
+                    console.error('SW Registration failed:', error);
+                    swStatus.textContent = '注册失败: HTTPS?';
+                    swStatus.style.color = 'var(--accent-red)';
+                }
+            } else {
+                swStatus.textContent = '浏览器不支持';
+            }
+            return null;
+        }
+
+        // 检查权限状态
+        function checkPermission() {
+            const permission = Notification.permission;
+            if (permission === 'granted') {
+                permStatus.textContent = '已授权';
+                permToggle.checked = true;
+                permToggle.disabled = true; // 授权后通常无法在页面内取消
+            } else if (permission === 'denied') {
+                permStatus.textContent = '已拒绝 (请在设置中开启)';
+                permToggle.checked = false;
+            } else {
+                permStatus.textContent = '未授权';
+                permToggle.checked = false;
+            }
+        }
+
+        // 请求权限
+        permToggle.addEventListener('change', async (e) => {
+            if (e.target.checked) {
+                const permission = await Notification.requestPermission();
+                checkPermission();
+                if (permission === 'granted') {
+                    showToast('权限已获取');
+                    // 首次获取权限发送一条测试
+                    new Notification('哈基米助手', { body: '通知功能已准备就绪' });
+                } else {
+                    showToast('权限被拒绝');
+                }
+            }
+        });
+
+        // 触发通知逻辑
+        async function triggerNotification(delaySeconds) {
+            if (Notification.permission !== 'granted') {
+                showToast('请先开启通知权限');
+                return;
+            }
+
+            showToast(delaySeconds > 0 ? `${delaySeconds}秒后发送通知...` : '正在发送...');
+
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                // 通过 SW 发送 (支持后台)
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'NOTIFY',
+                    title: '新消息',
+                    body: '这是一条来自后台的模拟消息',
+                    delay: delaySeconds * 1000
+                });
+            } else {
+                // 降级方案：直接使用 Notification API (仅前台有效)
+                setTimeout(() => {
+                    new Notification('新消息', {
+                        body: 'Service Worker 未就绪，使用前台通知',
+                        icon: ''
+                    });
+                }, delaySeconds * 1000);
+            }
+        }
+
+        // 初始化
+        window.addEventListener('load', () => {
+            checkPermission();
+            registerSW();
+        });
+
+    </script>
+</body>
+</html>
