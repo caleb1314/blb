@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>iOS Glass OS - Hakimi Edition v14</title>
-    <!-- 必须确保同目录下有 manifest.json 文件 -->
+    <title>iOS Glass OS - Hakimi Edition v15</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
@@ -462,7 +461,17 @@
         
         .header-right { width: 60px; display: flex; justify-content: flex-end; align-items: center; color: var(--accent-color); cursor: pointer; }
 
-        .chat-int-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 80px; }
+        /* FIXED SCROLLING ISSUE */
+        .chat-int-body { 
+            flex: 1; 
+            overflow-y: auto; 
+            overflow-x: hidden; /* Prevent horizontal scroll */
+            padding: 20px 12px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 16px; 
+            padding-bottom: 80px; 
+        }
         
         /* New Footer - TIGHTER PADDING */
         .chat-int-footer {
@@ -505,9 +514,33 @@
             --text-color: #FFFFFF;
         }
 
+        /* --- New Message Row Structure for Avatars --- */
+        .msg-row {
+            display: flex;
+            width: 100%;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .msg-row-sent {
+            justify-content: flex-end;
+        }
+        .msg-row-received {
+            justify-content: flex-start;
+        }
+
+        .msg-avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            background-color: #ccc;
+            flex-shrink: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
         /* 气泡通用样式 */
         .msg-bubble {
-            max-width: 240px; /* 限制宽度，约15个中文字符 */
+            max-width: 190px; /* 限制宽度，约12个中文字符 */
             padding: 6px 10px;
             border-radius: 18px;
             font-size: 15px;
@@ -523,7 +556,6 @@
         /* --- 发送方 (User) --- */
         .msg-sent {
             background-color: var(--sent-bg);
-            align-self: flex-end;
             margin-right: 10px; /* 留出空间给大尾巴 */
             border-bottom-right-radius: 18px; /* 特殊圆角 */
         }
@@ -542,7 +574,6 @@
         /* --- 接收方 (Char) --- */
         .msg-received {
             background-color: var(--received-bg);
-            align-self: flex-start;
             margin-left: 10px; /* 留出空间给大尾巴 */
             border-bottom-left-radius: 18px; /* 特殊圆角 */
         }
@@ -561,7 +592,6 @@
         /* Typing Indicator (Instagram Style) */
         .msg-typing {
             background-color: var(--received-bg);
-            align-self: flex-start;
             margin-left: 10px;
             border-bottom-left-radius: 18px;
             padding: 10px 14px;
@@ -1056,7 +1086,6 @@
                 </div>
             </div>
 
-            <!-- 恢复的设置项 -->
             <div class="settings-group">
                 <div class="settings-item">
                     <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg></div>
@@ -1093,30 +1122,54 @@
         </div>
         <div class="settings-content" style="padding-top:120px;">
             <div class="notify-desc">
-                开启后，当您离开网页（切到后台）时，活跃的角色会尝试向您发送离线消息。
+                管理角色的消息通知行为。
             </div>
 
             <div class="ios-form-group">
                 <div class="ios-input-row">
-                    <label class="ios-label">允许离线通知</label>
+                    <label class="ios-label" style="flex:1;">离线通知</label>
                     <label class="ios-switch">
                         <input type="checkbox" id="offlineNotifyToggle" onchange="toggleOfflineNotify()">
                         <span class="slider"></span>
                     </label>
                 </div>
-            </div>
-
-            <div class="ios-form-group" id="notifyIntervalGroup" style="display:none;">
-                <div class="ios-input-row" style="flex-direction:column; align-items:flex-start; height:auto; gap:10px;">
-                    <div style="width:100%; display:flex; justify-content:space-between;">
-                        <label class="ios-label">通知间隔</label>
-                        <span style="font-family:monospace; opacity:0.6;" id="notifyIntervalVal">1h</span>
+                <div class="ios-input-row" id="notifyIntervalGroup" style="display:none; flex-direction:column; align-items:flex-start; height:auto; gap:10px; border-bottom:none;">
+                    <div style="width:100%; display:flex; justify-content:space-between; font-size:13px; opacity:0.7;">
+                        <span>通知间隔</span>
+                        <span style="font-family:monospace;" id="notifyIntervalVal">1h</span>
                     </div>
                     <input type="range" id="notifyInterval" min="1" max="24" step="1" value="1" style="width:100%;" oninput="updateNotifySlider(this.value)">
                     <div style="width:100%; display:flex; justify-content:space-between; font-size:10px; opacity:0.4;">
-                        <span>1h</span><span>12h</span><span>24h</span>
+                        <span>1h</span><span>24h</span>
                     </div>
                 </div>
+            </div>
+            <div class="notify-desc" style="text-align:left; padding-top:0;">
+                开启后，当您离开网页（切到后台）时，活跃的角色会尝试向您发送离线消息。
+            </div>
+
+            <!-- Background Activity Section -->
+            <div class="ios-form-group">
+                <div class="ios-input-row">
+                    <label class="ios-label" style="flex:1;">后台活动</label>
+                    <label class="ios-switch">
+                        <input type="checkbox" id="bgActivityToggle" onchange="toggleBackgroundActivity()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="ios-input-row" id="bgActivityGroup" style="display:none; flex-direction:column; align-items:flex-start; height:auto; gap:10px; border-bottom:none;">
+                    <div style="width:100%; display:flex; justify-content:space-between; font-size:13px; opacity:0.7;">
+                        <span>活动频率</span>
+                        <span style="font-family:monospace;" id="bgIntervalVal">15min</span>
+                    </div>
+                    <input type="range" id="bgInterval" min="1" max="60" step="1" value="15" style="width:100%;" oninput="updateBgIntervalSlider(this.value)">
+                    <div style="width:100%; display:flex; justify-content:space-between; font-size:10px; opacity:0.4;">
+                        <span>1min</span><span>60min</span>
+                    </div>
+                </div>
+            </div>
+            <div class="notify-desc" style="text-align:left; padding-top:0;">
+                开启后，角色可以在您不操作时主动发起对话。
             </div>
 
             <div class="settings-group" style="background:transparent; border:none; box-shadow:none;">
@@ -1279,7 +1332,7 @@
     <audio id="globalAudio"></audio>
 
     <script>
-        const STATE_KEY = 'hajimi_os_state_v14'; 
+        const STATE_KEY = 'hajimi_os_state_v15'; 
         let systemState = { 
             themeIndex: 0, 
             lastSong: null, 
@@ -1303,7 +1356,8 @@
             },
             apiPresets: { main: [], sub: [] },
             fetchedModels: [],
-            notifyConfig: { enabled: false, interval: 1 }
+            notifyConfig: { enabled: false, interval: 1 },
+            backgroundConfig: { enabled: false, interval: 15 } // New Config
         };
         let lyricsData = [];
         let currentSearchResults = []; 
@@ -1315,6 +1369,7 @@
         let currentSong = null;
         let currentTab = 0; 
         let currentPresetTab = 'main';
+        let bgActivityIntervalId = null;
 
         function compressImage(file, maxWidth = 300, quality = 0.7) {
             return new Promise((resolve, reject) => {
@@ -1356,6 +1411,7 @@
                     if(!systemState.apiPresets) systemState.apiPresets = { main: [], sub: [] };
                     if(!systemState.fetchedModels) systemState.fetchedModels = [];
                     if(!systemState.notifyConfig) systemState.notifyConfig = { enabled: false, interval: 1 };
+                    if(!systemState.backgroundConfig) systemState.backgroundConfig = { enabled: false, interval: 15 };
 
                     applyTheme(systemState.themeIndex);
                     
@@ -1372,6 +1428,12 @@
                     document.getElementById('notifyInterval').value = systemState.notifyConfig.interval;
                     updateNotifySlider(systemState.notifyConfig.interval);
                     toggleOfflineNotify(false);
+
+                    // Restore Background Activity UI
+                    document.getElementById('bgActivityToggle').checked = systemState.backgroundConfig.enabled;
+                    document.getElementById('bgInterval').value = systemState.backgroundConfig.interval;
+                    updateBgIntervalSlider(systemState.backgroundConfig.interval);
+                    toggleBackgroundActivity(false);
 
                     switchChatTab(0); 
                     renderPlaylist();
@@ -1413,7 +1475,7 @@
             if (enabled) {
                 const perm = await Notification.requestPermission();
                 if (perm === 'granted') {
-                    group.style.display = 'block';
+                    group.style.display = 'flex';
                     if(save) { systemState.notifyConfig.enabled = true; saveState(); showToast("离线通知已开启"); }
                 } else {
                     document.getElementById('offlineNotifyToggle').checked = false;
@@ -1422,6 +1484,70 @@
             } else {
                 group.style.display = 'none';
                 if(save) { systemState.notifyConfig.enabled = false; saveState(); }
+            }
+        }
+
+        // --- Background Activity Logic ---
+        function updateBgIntervalSlider(val) {
+            document.getElementById('bgIntervalVal').textContent = val + 'min';
+            systemState.backgroundConfig.interval = parseInt(val);
+            saveState();
+            if(systemState.backgroundConfig.enabled) restartBgActivityTimer();
+        }
+
+        function toggleBackgroundActivity(save = true) {
+            const enabled = document.getElementById('bgActivityToggle').checked;
+            const group = document.getElementById('bgActivityGroup');
+            if(enabled) {
+                group.style.display = 'flex';
+                if(save) { systemState.backgroundConfig.enabled = true; saveState(); showToast("后台活动已开启"); }
+                startBgActivityTimer();
+            } else {
+                group.style.display = 'none';
+                if(save) { systemState.backgroundConfig.enabled = false; saveState(); }
+                stopBgActivityTimer();
+            }
+        }
+
+        function startBgActivityTimer() {
+            stopBgActivityTimer();
+            // Check every minute if we should trigger a message
+            bgActivityIntervalId = setInterval(checkBgActivity, 60000);
+        }
+
+        function stopBgActivityTimer() {
+            if(bgActivityIntervalId) { clearInterval(bgActivityIntervalId); bgActivityIntervalId = null; }
+        }
+
+        function restartBgActivityTimer() {
+            stopBgActivityTimer();
+            startBgActivityTimer();
+        }
+
+        function checkBgActivity() {
+            if(!systemState.backgroundConfig.enabled) return;
+            // Simple logic: 10% chance every minute to trigger if interval passed
+            // In a real app, you'd track last message time per char.
+            // Here we just simulate a random event based on the interval.
+            const chance = 1 / systemState.backgroundConfig.interval; 
+            if(Math.random() < chance && systemState.activeChats.length > 0) {
+                triggerProactiveMessage();
+            }
+        }
+
+        function triggerProactiveMessage() {
+            const randomCharId = systemState.activeChats[Math.floor(Math.random() * systemState.activeChats.length)];
+            const char = systemState.characterLibrary.find(c => c.id === randomCharId);
+            if(!char) return;
+            
+            const msgs = ["在干嘛呢？", "突然想到你了。", "今天过得怎么样？", "看到一条消息觉得很有趣...", "有点无聊了。"];
+            const text = msgs[Math.floor(Math.random() * msgs.length)];
+            
+            handleOfflineReply(char.name, text); // Reuse this function to add msg and notify
+            
+            // If notification permission granted, send a real notification too
+            if(Notification.permission === 'granted') {
+                new Notification(char.name, { body: text, icon: char.avatar });
             }
         }
 
@@ -1466,7 +1592,7 @@
         }
 
         function handleOfflineReply(charName, text) {
-            showToast(`收到 ${charName} 的离线消息`);
+            showToast(`收到 ${charName} 的消息`);
             const char = systemState.characterLibrary.find(c => c.name === charName);
             if (char) {
                 if (!systemState.chatHistory[char.id]) systemState.chatHistory[char.id] = [];
@@ -1800,10 +1926,38 @@
 
         function renderMessageBubble(type, text) {
             const body = document.getElementById('chatIntBody');
+            
+            // Create Row
+            const row = document.createElement('div');
+            row.className = `msg-row ${type === 'sent' ? 'msg-row-sent' : 'msg-row-received'}`;
+            
+            // Determine Avatar
+            let avatarUrl = '';
+            if (type === 'sent') {
+                avatarUrl = systemState.userSettings.avatar;
+            } else {
+                avatarUrl = currentChatChar ? currentChatChar.avatar : '';
+            }
+            
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'msg-avatar';
+            avatarDiv.style.backgroundImage = `url('${avatarUrl}')`;
+            
+            // Create Bubble
             const bubble = document.createElement('div');
             bubble.className = `msg-bubble ${type === 'sent' ? 'msg-sent' : 'msg-received'}`;
             bubble.textContent = text;
-            body.appendChild(bubble);
+            
+            // Assemble
+            if (type === 'sent') {
+                row.appendChild(bubble);
+                row.appendChild(avatarDiv);
+            } else {
+                row.appendChild(avatarDiv);
+                row.appendChild(bubble);
+            }
+            
+            body.appendChild(row);
         }
 
         function closeChatInterface() { document.getElementById('chatInterface').classList.remove('open'); currentChatChar = null; }
@@ -1830,15 +1984,26 @@
 
         function showTypingIndicator() {
             const body = document.getElementById('chatIntBody');
+            
+            const row = document.createElement('div');
+            row.className = 'msg-row msg-row-received';
+            row.id = 'typingRow';
+            
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'msg-avatar';
+            avatarDiv.style.backgroundImage = `url('${currentChatChar ? currentChatChar.avatar : ''}')`;
+            
             const typingDiv = document.createElement('div');
             typingDiv.className = 'msg-typing';
-            typingDiv.id = 'typingIndicator';
             typingDiv.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
-            body.appendChild(typingDiv);
+            
+            row.appendChild(avatarDiv);
+            row.appendChild(typingDiv);
+            body.appendChild(row);
             scrollToBottom();
         }
 
-        function hideTypingIndicator() { const el = document.getElementById('typingIndicator'); if(el) el.remove(); }
+        function hideTypingIndicator() { const el = document.getElementById('typingRow'); if(el) el.remove(); }
 
         async function triggerApiReply() {
             if (!currentChatChar) return;
