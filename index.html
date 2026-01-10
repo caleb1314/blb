@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>iOS Glass OS - Hakimi Edition v13</title>
+    <title>iOS Glass OS - Hakimi Edition v14</title>
+    <!-- 必须确保同目录下有 manifest.json 文件 -->
+    <link rel="manifest" href="manifest.json">
     <style>
         :root {
             --font-sys: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
@@ -403,6 +405,11 @@
             flex: 1; background: transparent; border: none; direction: rtl;
             color: var(--text-secondary); font-size: 15px; outline: none;
             font-family: var(--font-sys); appearance: none;
+            /* 修复：防止长文本挤出按钮 */
+            min-width: 0;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
         }
 
         .avatar-upload-area {
@@ -586,11 +593,6 @@
         .typing-dot:nth-child(1) { animation-delay: -0.32s; }
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
         
-        @keyframes typingBounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
-        }
-        
         /* Tab Bar */
         .chat-tab-bar-container { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: center; padding: 0 20px; pointer-events: none; }
         .chat-tab-bar {
@@ -722,6 +724,7 @@
         .fetch-btn {
             width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
             border-radius: 8px; background: rgba(128,128,128,0.1); cursor: pointer; margin-left: 10px;
+            flex-shrink: 0; /* 防止被挤压 */
         }
         
         /* iOS Toggle Switch */
@@ -838,8 +841,18 @@
             line-height: 1.4; text-align: center;
         }
 
-        .btn-test { width: 90%; height: 44px; background: var(--text-primary); color: var(--bg-image); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-top: 10px; cursor: pointer; margin-left: auto; margin-right: auto; }
-        .btn-test:active { opacity: 0.8; }
+        /* 重绘的测试按钮 */
+        .ios-btn-primary {
+            width: 90%; height: 50px;
+            background: var(--accent-color); color: #fff;
+            border-radius: 14px; font-size: 16px; font-weight: 600;
+            display: flex; align-items: center; justify-content: center;
+            margin: 20px auto 10px auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.1s, opacity 0.1s;
+            cursor: pointer;
+        }
+        .ios-btn-primary:active { transform: scale(0.98); opacity: 0.9; }
 
     </style>
 </head>
@@ -1043,10 +1056,24 @@
                 </div>
             </div>
 
+            <!-- 恢复的设置项 -->
             <div class="settings-group">
                 <div class="settings-item">
                     <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg></div>
                     <div class="st-label">外观显示</div>
+                    <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                </div>
+                <div class="settings-item">
+                    <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></div>
+                    <div class="st-label">记忆管理</div>
+                    <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <div class="settings-item">
+                    <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></div>
+                    <div class="st-label">声音与触感</div>
                     <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
                 </div>
                 <div class="settings-item" onclick="openNotifySettings()">
@@ -1093,7 +1120,8 @@
             </div>
 
             <div class="settings-group" style="background:transparent; border:none; box-shadow:none;">
-                <div class="btn-test" onclick="testNotification()">
+                <!-- 重绘的测试按钮 -->
+                <div class="ios-btn-primary" onclick="testNotification()">
                     <svg class="icon" viewBox="0 0 24 24" style="margin-right:8px; stroke:#fff;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                     立即测试通知
                 </div>
@@ -1251,7 +1279,7 @@
     <audio id="globalAudio"></audio>
 
     <script>
-        const STATE_KEY = 'hajimi_os_state_v13'; 
+        const STATE_KEY = 'hajimi_os_state_v14'; 
         let systemState = { 
             themeIndex: 0, 
             lastSong: null, 
