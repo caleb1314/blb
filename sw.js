@@ -1,54 +1,64 @@
-// sw.js - Service Worker 核心逻辑
+// sw.js - 哈基米离线通知服务
 
-// 安装时强制跳过等待，立即接管
 self.addEventListener('install', (event) => {
-    self.skipWaiting();
-    console.log('Service Worker Installed');
+    self.skipWaiting(); // 强制立即接管
+    console.log('Hakimi SW Installed');
 });
 
-// 激活时立即控制所有页面
 self.addEventListener('activate', (event) => {
     event.waitUntil(self.clients.claim());
-    console.log('Service Worker Activated');
+    console.log('Hakimi SW Activated');
 });
 
-// 监听主页面发来的消息
+// 监听主页面发来的指令
 self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'NOTIFY') {
-        const title = event.data.title || '新消息';
-        const delay = event.data.delay || 0;
-        const options = {
-            body: event.data.body || '内容',
-            icon: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', // 默认用GitHub图标测试
-            vibrate: [200, 100, 200],
-            tag: 'hajimi-notification',
-            renotify: true
-        };
+    if (event.data && event.data.type === 'SCHEDULE_NOTIFY') {
+        const { title, body, delay, charId } = event.data;
+        
+        console.log(`SW received schedule: ${title} in ${delay}ms`);
 
-        if (delay > 0) {
-            setTimeout(() => {
-                self.registration.showNotification(title, options);
-            }, delay);
-        } else {
-            self.registration.showNotification(title, options);
-        }
+        // 使用 setTimeout 模拟定时推送
+        // 注意：在移动端浏览器完全关闭或杀后台后，这个 Timer 可能会失效
+        setTimeout(() => {
+            self.registration.showNotification(title, {
+                body: body,
+                icon: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', // 可以换成你的图标 URL
+                vibrate: [200, 100, 200],
+                tag: 'hakimi-offline-msg',
+                data: {
+                    charName: title,
+                    text: body,
+                    charId: charId,
+                    url: self.registration.scope // 点击打开的链接
+                }
+            });
+        }, delay);
     }
 });
 
-// 监听通知点击事件
+// 监听通知点击
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     
-    // 点击通知后打开或聚焦页面
+    const notificationData = event.notification.data;
+
+    // 点击后打开或聚焦页面
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            // 如果页面已经打开，聚焦它
+            // 1. 尝试找到已经打开的窗口
             for (const client of clientList) {
-                if (client.url.includes('index.html') || client.url.endsWith('/')) {
-                    return client.focus();
+                if (client.url.includes('index.html') || client.url === notificationData.url) {
+                    client.focus();
+                    // 告诉页面：我是点击通知进来的，处理一下这条消息
+                    client.postMessage({
+                        type: 'OPEN_CHAT',
+                        charName: notificationData.charName,
+                        text: notificationData.text
+                    });
+                    return;
                 }
             }
-            // 如果页面没打开，打开它
+            // 2. 如果没打开，则新开窗口
             if (clients.openWindow) {
                 return clients.openWindow('./index.html');
             }
