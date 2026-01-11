@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>iOS Glass OS - Hakimi Edition v17</title>
+    <title>iOS Glass OS - Hakimi Edition v18</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
@@ -354,11 +354,12 @@
         .status-dot.show { display: block; }
         @keyframes pulseDot { 0% { opacity: 0.6; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.6; transform: scale(0.9); } }
 
-        /* Modals */
+        /* Modals - UPDATED Z-INDEX */
         .modal-overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.4); backdrop-filter: blur(5px);
-            z-index: 600; display: none; align-items: center; justify-content: center;
+            z-index: 1100; /* Increased to be above Account Manager (650) */
+            display: none; align-items: center; justify-content: center;
             opacity: 0; transition: opacity 0.3s;
         }
         .modal-overlay.show { display: flex; opacity: 1; }
@@ -370,7 +371,7 @@
         .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center; }
         
         /* Specific Fix for API Preset Modal Layer */
-        #apiPresetModal { z-index: 750; }
+        #apiPresetModal { z-index: 1150; }
 
         .ios-form-group {
             background: var(--form-group-bg);
@@ -1263,7 +1264,7 @@
             <input type="file" id="userFormFile" style="display:none;" accept="image/*" onchange="handleUserFileSelect(this)">
             <div class="ios-form-group">
                 <div class="ios-input-row"><label class="ios-label">名称</label><input type="text" id="userName" class="ios-input" placeholder="输入名称"></div>
-                <div class="ios-input-row"><label class="ios-label">性别</label><select id="userGender" class="ios-select"><option value="Male">男</option><option value="Female">女</option><option value="Other">其他</option></select></div>
+                <div class="ios-input-row"><label class="ios-label">性别</label><select id="userGender" class="ios-select"><option value="Female">女</option><option value="Male">男</option><option value="Other">其他</option></select></div>
                 <div class="ios-input-row"><label class="ios-label">生日</label><input type="date" id="userBirthday" class="ios-input"></div>
             </div>
             <div class="ios-form-group">
@@ -1455,7 +1456,7 @@
             </div>
             <div class="ios-form-group">
                 <div class="ios-input-row"><label class="ios-label">人设</label><input type="text" id="charPersona" class="ios-input" placeholder="简短描述"></div>
-                <div class="ios-input-row"><label class="ios-label">关联</label><select id="charRel" class="ios-select"><option value="None">无</option></select></div>
+                <div class="ios-input-row"><label class="ios-label">关联</label><select id="charRel" class="ios-select"><option value="">无 (使用当前活跃账号)</option></select></div>
                 <div class="ios-input-row"><label class="ios-label">分组</label><select id="charGroup" class="ios-select"></select></div>
             </div>
             <div class="modal-btns">
@@ -1500,7 +1501,7 @@
     <audio id="globalAudio"></audio>
 
     <script>
-        const STATE_KEY = 'hajimi_os_state_v17'; 
+        const STATE_KEY = 'hajimi_os_state_v18'; 
         let systemState = { 
             themeIndex: 0, 
             lastSong: null, 
@@ -1513,8 +1514,8 @@
             groups: ['All', 'Love', 'Friend', 'Family'], 
             currentGroupFilter: 'All', 
             libraryViewMode: 'list', 
-            userSettings: { name: 'Hakimi', bio: '@hajimi_helper', avatar: '', gender: 'Male', birthday: '', persona: '' },
-            userAccounts: { main: [], alt: [] }, // New: Account Manager Data
+            userSettings: { name: 'Hakimi', bio: '@hajimi_helper', avatar: '', gender: 'Female', birthday: '', persona: '' },
+            userAccounts: { main: [], alt: [] }, 
             apiConfig: {
                 url: '',
                 key: '',
@@ -1527,21 +1528,21 @@
             fetchedModels: [],
             notifyConfig: { enabled: false, interval: 1 },
             backgroundConfig: { enabled: false, interval: 15 },
-            personalTabTitle: 'Personal Center' // New: Editable top bar text
+            personalTabTitle: 'Personal Center' 
         };
         let lyricsData = [];
         let currentSearchResults = []; 
         let isEditMode = false;
         let selectedIndices = new Set();
         let editingCharId = null;
-        let editingUserId = null; // New
+        let editingUserId = null; 
         let currentAvatarBase64 = '';
-        let currentUserAvatarBase64 = ''; // New
+        let currentUserAvatarBase64 = ''; 
         let isPlaying = false;
         let currentSong = null;
         let currentTab = 0; 
         let currentPresetTab = 'main';
-        let currentAccountTab = 'main'; // New
+        let currentAccountTab = 'main'; 
         let bgActivityIntervalId = null;
 
         function compressImage(file, maxWidth = 300, quality = 0.7) {
@@ -1576,7 +1577,7 @@
                     const parsed = JSON.parse(saved);
                     systemState = { ...systemState, ...parsed };
                     
-                    if(!systemState.userSettings) systemState.userSettings = { name: 'Hakimi', bio: '@hajimi_helper', avatar: '', gender: 'Male', birthday: '', persona: '' };
+                    if(!systemState.userSettings) systemState.userSettings = { name: 'Hakimi', bio: '@hajimi_helper', avatar: '', gender: 'Female', birthday: '', persona: '' };
                     if(!systemState.userAccounts) systemState.userAccounts = { main: [], alt: [] };
                     if(!systemState.chatHistory) systemState.chatHistory = {};
                     if(!systemState.groups || systemState.groups.length === 0) systemState.groups = ['All', 'Love', 'Friend', 'Family'];
@@ -1993,6 +1994,15 @@
             systemState.groups.forEach(g => { if(g !== 'All' && g !== 'Default') options += `<option value="${g}">${g}</option>`; });
             groupSelect.innerHTML = options;
 
+            // Populate User Accounts for Association
+            const relSelect = document.getElementById('charRel');
+            let relOptions = '<option value="">无 (使用当前活跃账号)</option>';
+            const allUsers = [...systemState.userAccounts.main, ...systemState.userAccounts.alt];
+            allUsers.forEach(u => {
+                relOptions += `<option value="${u.id}">${u.name}</option>`;
+            });
+            relSelect.innerHTML = relOptions;
+
             if(charId) {
                 title.textContent = "编辑角色";
                 delBtn.style.display = 'block';
@@ -2003,6 +2013,7 @@
                     document.getElementById('charGender').value = char.gender;
                     document.getElementById('charPersona').value = char.persona;
                     document.getElementById('charGroup').value = char.group || 'Default';
+                    document.getElementById('charRel').value = char.linkedUser || ''; // Set linked user
                     if(char.avatar) {
                         currentAvatarBase64 = char.avatar;
                         document.getElementById('charFormAvatarPreview').style.backgroundImage = `url('${char.avatar}')`;
@@ -2036,7 +2047,8 @@
                 note: document.getElementById('charNote').value,
                 gender: document.getElementById('charGender').value,
                 persona: document.getElementById('charPersona').value,
-                rel: document.getElementById('charRel').value,
+                rel: document.getElementById('charRel').value, // Legacy field, kept for safety
+                linkedUser: document.getElementById('charRel').value, // New field for user binding
                 group: document.getElementById('charGroup').value,
                 avatar: currentAvatarBase64
             };
@@ -2146,7 +2158,14 @@
             // Determine Avatar
             let avatarUrl = '';
             if (type === 'sent') {
-                avatarUrl = systemState.userSettings.avatar;
+                // Check if char has linked user, otherwise use global settings
+                if (currentChatChar && currentChatChar.linkedUser) {
+                    const allUsers = [...systemState.userAccounts.main, ...systemState.userAccounts.alt];
+                    const linkedUser = allUsers.find(u => u.id === currentChatChar.linkedUser);
+                    avatarUrl = linkedUser ? linkedUser.avatar : systemState.userSettings.avatar;
+                } else {
+                    avatarUrl = systemState.userSettings.avatar;
+                }
             } else {
                 avatarUrl = currentChatChar ? currentChatChar.avatar : '';
             }
@@ -2223,7 +2242,14 @@
             if (!cfg.url || !cfg.key) { showToast("请先配置 API"); return; }
             showTypingIndicator();
             
-            const user = systemState.userSettings;
+            // Determine User Info (Linked vs Global)
+            let user = systemState.userSettings;
+            if (currentChatChar.linkedUser) {
+                const allUsers = [...systemState.userAccounts.main, ...systemState.userAccounts.alt];
+                const foundUser = allUsers.find(u => u.id === currentChatChar.linkedUser);
+                if (foundUser) user = foundUser;
+            }
+
             const userInfo = `\n\n[User Info]\nName: ${user.name}\nGender: ${user.gender}\nBirthday: ${user.birthday || 'Unknown'}\nPersona: ${user.persona || 'None'}`;
 
             const messages = [];
@@ -2413,7 +2439,7 @@
             const delBtn = document.getElementById('userDeleteBtnArea');
             
             document.getElementById('userName').value = '';
-            document.getElementById('userGender').value = 'Male';
+            document.getElementById('userGender').value = 'Female'; // Changed default to Female
             document.getElementById('userBirthday').value = '';
             document.getElementById('userPersona').value = '';
             document.getElementById('userFormAvatarPreview').style.backgroundImage = '';
@@ -2454,6 +2480,7 @@
             if(!name) { showToast("请输入名称"); return; }
             
             const newAcc = {
+                id: editingUserId !== null && systemState.userAccounts[currentAccountTab][editingUserId].id ? systemState.userAccounts[currentAccountTab][editingUserId].id : Date.now().toString(), // Generate ID
                 name: name,
                 gender: document.getElementById('userGender').value,
                 birthday: document.getElementById('userBirthday').value,
@@ -2494,7 +2521,7 @@
             if(confirm(`切换到账号 "${acc.name}"?`)) {
                 systemState.userSettings = { 
                     name: acc.name, 
-                    bio: `@${acc.name}`, // Auto-gen bio
+                    bio: `@${acc.name}`, 
                     avatar: acc.avatar,
                     gender: acc.gender,
                     birthday: acc.birthday,
