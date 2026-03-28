@@ -2,2673 +2,323 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>iOS Glass OS - Hakimi Edition v18</title>
-    <link rel="manifest" href="manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Video Call - Hajimi Edition</title>
     <style>
         :root {
-            --font-sys: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
-            
-            /* Theme: Gray/Black Glass */
-            --bg-image: linear-gradient(180deg, #f2f4f6 0%, #e3e8eb 100%);
-            --glass-card: rgba(255, 255, 255, 0.75);
-            --glass-border: rgba(255, 255, 255, 0.8);
-            --text-primary: #1d1d1f;
-            --text-secondary: #86868b;
-            --icon-bg: rgba(255, 255, 255, 0.8);
-            --dock-bg: rgba(255, 255, 255, 0.55);
-            --shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-            
-            /* Island Colors */
-            --island-bg: #000; 
-            --island-expanded-bg: rgba(255, 255, 255, 0.9);
-            --island-text: #1d1d1f; 
-            --island-shadow: 0 20px 60px rgba(0,0,0,0.15);
-            
-            /* Controls */
-            --track-bg: rgba(0,0,0,0.08);
-            --track-fill: #1d1d1f;
-            --toast-bg: rgba(240, 240, 240, 0.9);
-            --playlist-bg: rgba(255, 255, 255, 0.9);
-            
-            --play-btn-bg: #1d1d1f; 
-            --play-btn-icon: #ffffff;
-            --battery-color: #1d1d1f;
-            
-            /* Accent & System Colors */
-            --accent-color: #333333; 
-            --danger-color: #ff3b30;
-            --success-color: #34c759;
-            --warning-color: #ffcc00;
-
-            /* Chat App Specific */
-            --chat-bg: #f2f4f6;
-            --capsule-bg: rgba(255, 255, 255, 0.65);
-            --capsule-active: #ffffff;
-            --bubble-sent: #333333;
-            --bubble-sent-text: #fff;
-            --bubble-received: rgba(255, 255, 255, 0.8);
-            --bubble-received-text: #000;
-            --chat-input-bg: #ffffff;
-            
-            /* iOS Form Styles */
-            --form-group-bg: rgba(255, 255, 255, 0.5);
-            --form-border: rgba(0, 0, 0, 0.1);
+            --ios-red: #ff3b30;
+            --glass: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
-        /* Dark Mode */
-        [data-theme="dark"] {
-            --bg-image: linear-gradient(180deg, #2c2c2e 0%, #1c1c1e 100%);
-            --glass-card: rgba(44, 44, 46, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.15);
-            --text-primary: #ffffff;
-            --text-secondary: #98989d;
-            --icon-bg: rgba(58, 58, 60, 0.8);
-            --dock-bg: rgba(38, 38, 40, 0.6);
-            --shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-            --track-bg: rgba(255,255,255,0.2);
-            --track-fill: #ffffff;
-            --toast-bg: rgba(40,40,40,0.9);
-            --playlist-bg: rgba(30, 30, 30, 0.9);
-            
-            --island-expanded-bg: rgba(28, 28, 30, 0.9);
-            --island-text: #ffffff;
-            --island-shadow: 0 20px 70px rgba(0,0,0,0.6);
-            
-            --play-btn-bg: #ffffff; 
-            --play-btn-icon: #000000;
-            --battery-color: #ffffff;
-            
-            --accent-color: #d1d1d6; 
-
-            --chat-bg: #000000;
-            --capsule-bg: rgba(58, 58, 60, 0.6);
-            --capsule-active: #636366;
-            --bubble-sent: #3a3a3c;
-            --bubble-received: #262628;
-            --bubble-received-text: #fff;
-            --chat-input-bg: #1c1c1e;
-            
-            --form-group-bg: rgba(44, 44, 46, 0.5);
-            --form-border: rgba(255, 255, 255, 0.1);
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
-        body { font-family: var(--font-sys); background: var(--bg-image); height: 100vh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; color: var(--text-primary); transition: background 0.5s ease; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #000; color: #fff; }
 
-        /* === UI Components === */
-        .status-bar { height: 50px; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; position: fixed; top: 0; z-index: 998; font-weight: 700; font-size: 16px; letter-spacing: 0.5px; pointer-events: none; }
+        /* === 视频背景 === */
+        #video-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+        }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* === DYNAMIC ISLAND === */
-        .dynamic-island { 
-            position: absolute; left: 50%; top: 11px; transform: translateX(-50%); 
-            width: 120px; height: 35px; 
-            background: var(--island-bg); 
-            border-radius: 20px; 
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); 
-            z-index: 999; 
-            display: flex; align-items: center; justify-content: center; 
-            padding: 0; overflow: hidden; cursor: pointer; pointer-events: auto; 
+        /* === 顶栏：左(历史) 中(备注) 右(设置) === */
+        .top-nav {
+            position: absolute; top: calc(env(safe-area-inset-top) + 10px);
+            left: 0; width: 100%; z-index: 50;
+            display: grid; grid-template-columns: 80px 1fr 80px; align-items: center;
+            padding: 0 16px;
         }
-        .camera-dot {
-            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-            width: 5px; height: 5px; background-color: #4cd964; border-radius: 50%;
-            z-index: 1001; transition: opacity 0.2s; box-shadow: 0 0 4px rgba(76, 217, 100, 0.5);
-        }
-        .dynamic-island.expanded .camera-dot, .dynamic-island.playing-state .camera-dot { opacity: 0; }
-        .dynamic-island.expanded { 
-            width: 92%; max-width: 380px; height: 180px; 
-            border-radius: 35px; background: var(--island-expanded-bg); 
-            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-            padding: 22px; flex-direction: column; justify-content: flex-start;
-            box-shadow: var(--island-shadow); border: 1px solid var(--glass-border);
-        }
-        .island-content-collapsed { width: 100%; height: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 6px; opacity: 1; transition: opacity 0.2s; }
-        .dynamic-island.expanded .island-content-collapsed { opacity: 0; display: none; }
-        .mini-cd-container { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; opacity: 0; transform: scale(0.5); transition: all 0.3s; }
-        .mini-cd { width: 100%; height: 100%; border-radius: 50%; background-color: #333; background-size: cover; background-position: center; animation: spin 4s linear infinite; animation-play-state: paused; box-shadow: 0 0 5px rgba(0,0,0,0.3); position: relative; }
-        .mini-cd::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; background: #000; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); }
-        .mini-wave-container { height: 12px; display: flex; align-items: flex-end; gap: 2px; opacity: 0; transform: scale(0.5); transition: all 0.3s; }
-        .mini-bar { width: 2px; background: rgba(255, 255, 255, 0.7); border-radius: 1px; animation: miniWave 0.8s ease-in-out infinite; animation-play-state: paused; }
-        .mini-bar:nth-child(1) { height: 4px; animation-delay: 0s; } .mini-bar:nth-child(2) { height: 8px; animation-delay: 0.1s; } .mini-bar:nth-child(3) { height: 12px; animation-delay: 0.2s; } .mini-bar:nth-child(4) { height: 7px; animation-delay: 0.3s; } .mini-bar:nth-child(5) { height: 3px; animation-delay: 0.4s; }
-        @keyframes miniWave { 0%, 100% { height: 3px; } 50% { height: 12px; } } @keyframes spin { 100% { transform: rotate(360deg); } }
-        .dynamic-island.playing-state .mini-cd-container, .dynamic-island.playing-state .mini-wave-container { opacity: 1; transform: scale(1); }
-        .dynamic-island.playing-state .mini-cd, .dynamic-island.playing-state .mini-bar { animation-play-state: running; }
-        .island-content-expanded { width: 100%; height: 100%; display: none; color: var(--island-text); opacity: 0; transition: opacity 0.3s 0.1s; flex-direction: column; justify-content: space-between; }
-        .dynamic-island.expanded .island-content-expanded { display: flex; opacity: 1; }
-        .island-top-section { display: flex; width: 100%; gap: 15px; align-items: center; position: relative; }
-        .island-album { width: 54px; height: 54px; background: #333; border-radius: 12px; flex-shrink: 0; background-size: cover; background-position: center; }
-        .island-info { flex: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; justify-content: center; }
-        .island-title { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--island-text); }
-        .island-artist { font-size: 14px; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--island-text); }
-        .island-progress-row { width: 100%; display: flex; flex-direction: column; gap: 6px; margin-top: 5px; }
-        .island-progress-bg { width: 100%; height: 5px; background: rgba(128,128,128,0.2); border-radius: 3px; overflow: hidden; }
-        .island-progress-fill { height: 100%; background: var(--island-text); width: 0%; border-radius: 3px; }
-        .island-time { display: flex; justify-content: space-between; font-size: 10px; opacity: 0.5; font-weight: 600; font-family: monospace; color: var(--island-text); }
-        .island-controls { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 5px; }
-        .island-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: var(--island-text); opacity: 0.8; transition: 0.1s; cursor: pointer; }
-        .island-btn:active { opacity: 0.5; transform: scale(0.9); }
-        .island-play-btn { width: 36px; height: 36px; opacity: 1; }
-        .island-btn svg { width: 22px; height: 22px; fill: currentColor; }
-        .island-play-btn svg { width: 32px; height: 32px; fill: currentColor; }
 
-        /* Screen & Widgets */
-        .screen-container { flex: 1; width: 100vw; display: flex; padding-top: 60px; }
-        .page { width: 100vw; height: 100%; padding: 20px; padding-bottom: 130px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; scrollbar-width: none; }
-        .page::-webkit-scrollbar { display: none; }
-        .widget-row { display: flex; gap: 15px; width: 100%; }
-        .widget { background: var(--glass-card); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border: 1px solid var(--glass-border); border-radius: 24px; box-shadow: var(--shadow); padding: 20px; position: relative; overflow: hidden; }
-        .w-large { width: 100%; height: 160px; }
-        .w-medium { width: calc(50% - 7.5px); height: 160px; }
-        .widget-content { height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
-        .w-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
-        .w-main-text { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-top: 4px; }
-        .w-sub-text { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
-        .app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 10px; padding: 10px 0; }
-        .app-item { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: transform 0.1s; }
-        .app-item:active { transform: scale(0.9); }
-        .app-icon { width: 60px; height: 60px; border-radius: 16px; background: var(--icon-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; color: var(--text-primary); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .app-name { font-size: 11px; color: var(--text-primary); font-weight: 500; text-align: center; white-space: nowrap; }
-        .icon { width: 28px; height: 28px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-        .icon-bold { stroke-width: 2.5; }
-
-        /* Dock */
-        .dock-container { padding: 0 20px 30px; width: 100%; position: fixed; bottom: 0; z-index: 90; pointer-events: none; }
-        .dock { width: 100%; height: 90px; background: var(--dock-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 35px; border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: space-around; padding: 0 10px; box-shadow: var(--shadow); pointer-events: auto; }
-        .theme-switcher { position: fixed; bottom: 140px; right: 20px; width: 40px; height: 40px; background: var(--glass-card); border-radius: 50%; border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; z-index: 200; box-shadow: 0 5px 15px rgba(0,0,0,0.1); cursor: pointer; }
-
-        /* =================================================================
-           CHAT APP STYLES
-           ================================================================= */
-        .chat-app {
-            position: fixed; bottom: 0; left: 0; width: 100vw; height: 100vh;
-            background: var(--bg-image); z-index: 550;
-            transform: translateY(110%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
-            display: flex; flex-direction: column; padding-top: 50px;
-        }
-        .chat-app.open { transform: translateY(0); }
-        .chat-app::before {
-            content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
-            background: rgba(255,255,255,0.4); backdrop-filter: blur(50px); -webkit-backdrop-filter: blur(50px); z-index: -1;
-        }
-        [data-theme="dark"] .chat-app::before { background: rgba(0,0,0,0.4); }
-
-        .chat-header {
-            padding: 10px 24px; display: flex; align-items: center; justify-content: space-between;
-            height: 50px; flex-shrink: 0; position: relative;
-        }
-        .chat-header-title {
-            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            font-size: 17px; font-weight: 600;
-        }
-        .chat-header-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary); }
-
-        .chat-segment-container { padding: 0 24px; margin-top: 10px; margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; }
-        .chat-segment-container::-webkit-scrollbar { display: none; }
-        .chat-segment {
-            min-width: 100%; height: 40px; background: var(--capsule-bg);
-            border-radius: 20px; display: flex; padding: 4px;
-            backdrop-filter: blur(10px); border: 1px solid var(--glass-border);
-            gap: 5px;
-        }
-        .segment-opt {
-            flex: 1; display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 600; color: var(--text-secondary);
-            border-radius: 16px; cursor: pointer; transition: 0.3s;
-            white-space: nowrap; padding: 0 10px;
-        }
-        .segment-opt.active { background: var(--capsule-active); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-
-        .chat-content { flex: 1; overflow-y: auto; padding: 0 20px; padding-bottom: 90px; position: relative; }
-        
-        .chat-view { display: none; width: 100%; height: 100%; flex-direction: column; }
-        .chat-view.active { display: flex; }
-
-        /* LIST VIEW STYLE (For Chats) */
-        .char-card-list {
-            background: var(--glass-card); backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 18px;
-            padding: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px;
-            cursor: pointer; transition: transform 0.2s;
-        }
-        .char-card-list:active { transform: scale(0.98); }
-        .char-card-list .char-avatar { width: 50px; height: 50px; border-radius: 50%; background-size: cover; background-position: center; background-color: #ccc; flex-shrink: 0; }
-        .char-card-list .char-info { flex: 1; overflow: hidden; }
-        .char-card-list .char-name { font-size: 16px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
-        .char-card-list .char-desc { font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-
-        /* GRID VIEW STYLE (For Library) */
-        #libraryList {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            padding-bottom: 20px;
-        }
-        
-        .char-card-grid {
-            background: var(--glass-card);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        .nav-btn {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: var(--glass); backdrop-filter: blur(15px);
+            border: 0.5px solid var(--glass-border);
+            display: flex; align-items: center; justify-content: center;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-            aspect-ratio: 1 / 1.1;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-            position: relative;
-            overflow: hidden;
         }
-        .char-card-grid:active { transform: scale(0.95); }
-        .char-card-grid .char-avatar {
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            background-size: cover;
-            background-position: center;
-            background-color: #e5e5ea;
-            margin-bottom: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        .nav-btn svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2; }
+
+        .center-info { text-align: center; }
+        .caller-name { font-size: 18px; font-weight: 600; text-shadow: var(--text-shadow); }
+        .call-timer { font-size: 12px; opacity: 0.9; font-variant-numeric: tabular-nums; text-shadow: var(--text-shadow); }
+
+        /* === 乙游式字幕消息 (中下方) === */
+        .subtitle-area {
+            position: absolute; bottom: 22%; left: 10%; right: 10%;
+            z-index: 100; text-align: center; pointer-events: none;
+            min-height: 60px; display: flex; align-items: center; justify-content: center;
         }
-        .char-card-grid .char-name {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-primary);
-            text-align: center;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+        .subtitle-text {
+            font-size: 18px; font-weight: 500; line-height: 1.6;
+            color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 0; transform: translateY(10px);
         }
-        .char-card-grid .char-desc {
-            font-size: 11px;
-            color: var(--text-secondary);
-            text-align: center;
-            opacity: 0.8;
-            margin-top: 2px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+        .subtitle-text.active { opacity: 1; transform: translateY(0); }
+
+        /* === 底部交互区 === */
+        .bottom-wrap {
+            position: absolute; bottom: calc(env(safe-area-inset-bottom) + 20px);
+            left: 0; width: 100%; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
         }
 
-        /* Redesigned Add Button */
-        .library-add-card {
-            grid-column: span 2;
-            height: 60px;
-            background: var(--glass-card);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 5px;
-            color: var(--accent-color);
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        /* 隐藏式输入框 */
+        .input-bar {
+            width: 85%; max-width: 400px; height: 44px;
+            background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(20px);
+            border-radius: 22px; border: 0.5px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; padding: 0 6px 0 16px;
         }
-        .library-add-card:active { transform: scale(0.98); background: rgba(255,255,255,0.5); }
-        .library-add-card svg { stroke-width: 2.5; }
+        .chat-input {
+            flex: 1; background: transparent; border: none; outline: none;
+            color: #fff; font-size: 15px;
+        }
+        .chat-input::placeholder { color: rgba(255,255,255,0.4); }
+        
+        .send-mini-btn {
+            width: 32px; height: 32px; border-radius: 50%; background: #fff;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .send-mini-btn svg { width: 16px; height: 16px; stroke: #000; fill: none; stroke-width: 2.5; }
 
-        /* Group Management List */
-        .group-manage-list {
-            display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px;
+        /* 控制按键 */
+        .controls-row { display: flex; align-items: center; gap: 40px; }
+        .ctrl-btn {
+            width: 56px; height: 56px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
-        .group-item-row {
-            display: flex; align-items: center; justify-content: space-between;
-            background: var(--glass-card); padding: 15px 20px;
-            border-radius: 18px; border: 1px solid var(--glass-border);
-        }
-        .group-item-name { font-weight: 600; color: var(--text-primary); }
-        .group-item-action { 
-            width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; background: rgba(128,128,128,0.1); cursor: pointer; color: var(--danger-color);
-        }
-        .group-add-row {
-            display: flex; gap: 10px; margin-bottom: 10px;
-        }
-        .group-input {
-            flex: 1; height: 44px; border-radius: 12px; border: none; padding: 0 15px;
-            background: var(--form-group-bg); color: var(--text-primary); outline: none;
-            border: 1px solid var(--glass-border); font-size: 15px;
-        }
-        .group-add-btn {
-            width: 44px; height: 44px; border-radius: 12px; background: var(--accent-color);
-            display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer;
-        }
+        .btn-mute { background: var(--glass); border: 0.5px solid var(--glass-border); backdrop-filter: blur(15px); }
+        .btn-hangup { background: var(--ios-red); }
+        .ctrl-btn svg { width: 24px; height: 24px; }
 
-        /* Green Status Dot */
-        .status-dot {
-            width: 6px; height: 6px;
-            background-color: var(--success-color);
-            border-radius: 50%;
-            display: none;
-            box-shadow: 0 0 5px rgba(52, 199, 89, 0.4);
-            animation: pulseDot 2s infinite;
+        /* === 历史记录面板 (侧滑) === */
+        .history-drawer {
+            position: fixed; top: 0; left: 0; width: 80%; height: 100%;
+            background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(25px);
+            z-index: 200; transform: translateX(-100%);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex; flex-direction: column; padding: 60px 20px 40px;
         }
-        .status-dot.show { display: block; }
-        @keyframes pulseDot { 0% { opacity: 0.6; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.6; transform: scale(0.9); } }
+        .history-drawer.active { transform: translateX(0); }
+        .history-title { font-size: 13px; font-weight: 800; color: #888; letter-spacing: 2px; margin-bottom: 20px; }
+        .history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; scrollbar-width: none; }
+        .history-list::-webkit-scrollbar { display: none; }
+        
+        .history-item { font-size: 14px; line-height: 1.5; padding-bottom: 10px; border-bottom: 0.5px solid rgba(255,255,255,0.1); }
+        .h-role { font-weight: 800; font-size: 11px; margin-bottom: 4px; color: #aaa; text-transform: uppercase; }
+        .h-content { color: #eee; }
 
-        /* Modals - UPDATED Z-INDEX */
+        /* === 配置弹窗 (主界面同款) === */
         .modal-overlay {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.4); backdrop-filter: blur(5px);
-            z-index: 1100; /* Increased to be above Account Manager (650) */
-            display: none; align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.3s;
-        }
-        .modal-overlay.show { display: flex; opacity: 1; }
-        .modal-box {
-            width: 85%; background: var(--bg-image); border-radius: 24px;
-            padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border); max-height: 80vh; overflow-y: auto;
-        }
-        .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center; }
-        
-        /* Specific Fix for API Preset Modal Layer */
-        #apiPresetModal { z-index: 1150; }
-
-        .ios-form-group {
-            background: var(--form-group-bg);
-            backdrop-filter: blur(15px);
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 20px;
-            border: 1px solid var(--glass-border);
-            width: 90%; margin-left: auto; margin-right: auto;
-        }
-        .ios-input-row {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            border-bottom: 0.5px solid var(--form-border);
-            height: 50px;
-        }
-        .ios-input-row:last-child { border-bottom: none; }
-        .ios-label { width: 90px; font-weight: 500; font-size: 15px; color: var(--text-primary); }
-        .ios-input { 
-            flex: 1; background: transparent; border: none; text-align: right; 
-            color: var(--text-secondary); font-size: 15px; outline: none;
-            font-family: var(--font-sys);
-            /* Prevent card stretching */
-            min-width: 0; 
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            overflow: hidden;
-        }
-        .ios-input::placeholder { color: var(--text-secondary); opacity: 0.5; }
-        .ios-select {
-            flex: 1; background: transparent; border: none; direction: rtl;
-            color: var(--text-secondary); font-size: 15px; outline: none;
-            font-family: var(--font-sys); appearance: none;
-            /* 修复：防止长文本挤出按钮 */
-            min-width: 0;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            overflow: hidden;
-        }
-
-        .avatar-upload-area {
-            display: flex; justify-content: center; margin-bottom: 25px; position: relative;
-        }
-        .avatar-circle {
-            width: 90px; height: 90px; border-radius: 50%; background: #e5e5ea;
-            background-size: cover; background-position: center; cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 2px solid #fff;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .avatar-cam-icon {
-            position: absolute; bottom: 0; right: calc(50% - 45px);
-            background: var(--accent-color); width: 28px; height: 28px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            border: 2px solid #fff; pointer-events: none;
-        }
-
-        .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
-        .btn { flex: 1; height: 44px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; font-size: 15px; }
-        .btn-cancel { background: rgba(120,120,128,0.15); color: var(--text-primary); }
-        .btn-primary { background: var(--accent-color); color: #fff; }
-        .btn-danger { background: var(--danger-color); color: #fff; }
-        
-        .option-item { padding: 15px; border-bottom: 1px solid rgba(128,128,128,0.1); text-align: center; cursor: pointer; font-size: 16px; color: var(--text-primary); }
-        .option-item:last-child { border-bottom: none; }
-        
-        /* === CHAT INTERFACE REFACTOR === */
-        .chat-interface {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-image); z-index: 600;
-            transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-            display: flex; flex-direction: column;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(10px);
+            z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px;
         }
-        .chat-interface.open { transform: translateX(0); }
-        
-        /* New Header */
-        .chat-int-header {
-            height: 96px; padding: 44px 16px 12px; display: flex; align-items: center; justify-content: space-between;
-            background: rgba(255,255,255,0.65); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border-bottom: 1px solid var(--glass-border); z-index: 10;
+        .modal-overlay.active { display: flex; }
+        .config-card {
+            width: 100%; max-width: 320px; background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px; padding: 24px; color: #1c1c1e; display: flex; flex-direction: column; gap: 14px;
         }
-        [data-theme="dark"] .chat-int-header { background: rgba(30,30,30,0.65); }
-        
-        .header-left { display: flex; align-items: center; gap: 4px; cursor: pointer; color: var(--accent-color); width: 60px; }
-        
-        .header-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .header-name-text { font-size: 15px; font-weight: 600; color: var(--text-primary); }
-        .header-status-text { font-size: 11px; color: var(--text-secondary); opacity: 0.8; }
-        
-        .header-right { width: 60px; display: flex; justify-content: flex-end; align-items: center; color: var(--accent-color); cursor: pointer; }
+        .config-input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; background: #f5f5f7; font-size: 14px; outline: none; }
+        .save-btn { width: 100%; padding: 12px; border-radius: 10px; background: #000; color: #fff; font-weight: 600; border: none; cursor: pointer; }
 
-        /* FIXED SCROLLING ISSUE & GAP FIX */
-        .chat-int-body { 
-            flex: 1; 
-            overflow-y: auto; 
-            overflow-x: hidden; /* Prevent horizontal scroll */
-            padding: 20px 12px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 16px; 
-            padding-bottom: 20px; /* Reduced from 80px to fix gap */
-        }
-        
-        /* New Footer - TIGHTER PADDING */
-        .chat-int-footer {
-            padding: 8px 16px 20px; /* Reduced bottom padding */
-            background: rgba(255,255,255,0.7); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-            border-top: 1px solid var(--glass-border); display: flex; gap: 12px; align-items: flex-end;
-            position: relative; z-index: 10;
-        }
-        [data-theme="dark"] .chat-int-footer { background: rgba(30,30,30,0.7); }
-        
-        .chat-func-btn { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); cursor: pointer; margin-bottom: 2px; }
-        
-        .chat-input-wrapper {
-            flex: 1; min-height: 38px; background: var(--chat-input-bg);
-            border-radius: 19px; border: 1px solid var(--glass-border);
-            display: flex; align-items: center; padding: 4px 4px 4px 14px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-        }
-        .chat-input-field {
-            flex: 1; border: none; background: transparent; outline: none;
-            font-size: 16px; color: var(--text-primary); font-family: var(--font-sys);
-            min-height: 24px; max-height: 100px; overflow-y: auto;
-        }
-        .chat-emoji-btn {
-            width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
-            color: var(--text-secondary); cursor: pointer; margin-left: 5px;
-        }
-        
-        .chat-send-btn {
-            width: 34px; height: 34px; border-radius: 50%; background: var(--accent-color);
-            display: flex; align-items: center; justify-content: center; color: #fff;
-            cursor: pointer; flex-shrink: 0; margin-bottom: 2px; transition: transform 0.1s;
-        }
-        .chat-send-btn:active { transform: scale(0.9); }
-        
-        /* Reduced Bubble Padding */
-        :root {
-            --sent-bg: #1C1C1E;
-            --received-bg: #8E8E93;
-            --text-color: #FFFFFF;
-        }
-
-        /* --- New Message Row Structure for Avatars --- */
-        .msg-row {
-            display: flex;
-            width: 100%;
-            align-items: flex-end;
-            gap: 8px;
-        }
-        .msg-row-sent {
-            justify-content: flex-end;
-        }
-        .msg-row-received {
-            justify-content: flex-start;
-        }
-
-        .msg-avatar {
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            background-size: cover;
-            background-position: center;
-            background-color: #ccc;
-            flex-shrink: 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        /* 气泡通用样式 */
-        .msg-bubble {
-            max-width: 240px; /* 恢复宽度，约15个中文字符 */
-            padding: 6px 10px;
-            border-radius: 18px;
-            font-size: 15px;
-            line-height: 1.4;
-            position: relative;
-            color: var(--text-color);
-            overflow: visible; /* 必须可见，否则尾巴被切掉 */
-            z-index: 1; /* 确保气泡在尾巴上面 */
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
-            word-wrap: break-word; /* 强制换行 */
-        }
-
-        /* --- 发送方 (User) --- */
-        .msg-sent {
-            background-color: var(--sent-bg);
-            margin-right: 10px; /* 留出空间给大尾巴 */
-            border-bottom-right-radius: 18px; /* 特殊圆角 */
-        }
-
-        /* 发送方尾巴 - 巨型版 */
-        .msg-sent::after {
-            content: '';
-            position: absolute;
-            width: 70px; height: 70px;
-            background-image: url('https://file.uhsea.com/2601/c981d7ddf32278e14cb38e60b7bc061eD5.png');
-            background-size: contain; background-repeat: no-repeat;
-            bottom: -29px; right: -46px; 
-            pointer-events: none; z-index: -1;
-        }
-
-        /* --- 接收方 (Char) --- */
-        .msg-received {
-            background-color: var(--received-bg);
-            margin-left: 10px; /* 留出空间给大尾巴 */
-            border-bottom-left-radius: 18px; /* 特殊圆角 */
-        }
-
-        /* 接收方尾巴 - 巨型版 */
-        .msg-received::before {
-            content: '';
-            position: absolute;
-            width: 70px; height: 70px;
-            background-image: url('https://file.uhsea.com/2601/acd2922f2d198d4ea87a3711d5bfa4282W.png');
-            background-size: contain; background-repeat: no-repeat;
-            bottom: -29px; left: -9px;
-            pointer-events: none; z-index: -1;
-        }
-
-        /* Typing Indicator (Instagram Style) */
-        .msg-typing {
-            background-color: var(--received-bg);
-            margin-left: 10px;
-            border-bottom-left-radius: 18px;
-            padding: 10px 14px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            height: 36px;
-            width: 60px;
-            justify-content: center;
-            border-radius: 18px;
-            position: relative;
-            z-index: 1;
-        }
-        .msg-typing::before {
-            content: '';
-            position: absolute;
-            width: 70px; height: 70px;
-            background-image: url('https://file.uhsea.com/2601/acd2922f2d198d4ea87a3711d5bfa4282W.png');
-            background-size: contain; background-repeat: no-repeat;
-            bottom: -29px; left: -9px;
-            pointer-events: none; z-index: -1;
-        }
-        .typing-dot {
-            width: 6px; height: 6px;
-            background-color: rgba(255,255,255,0.6);
-            border-radius: 50%;
-            animation: typingBounce 1.4s infinite ease-in-out both;
-        }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        
-        /* Tab Bar */
-        .chat-tab-bar-container { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: center; padding: 0 20px; pointer-events: none; }
-        .chat-tab-bar {
-            width: 90%; height: 60px; pointer-events: auto;
-            background: var(--dock-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-            border: 1px solid var(--glass-border); border-radius: 50px;
-            display: flex; align-items: center; justify-content: space-around;
-            box-shadow: var(--shadow);
-        }
-        .chat-tab-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); cursor: pointer; width: 50px; height: 100%; }
-        .chat-tab-item.active { color: var(--accent-color); }
-        .chat-tab-icon { width: 26px; height: 26px; stroke-width: 2; }
-        .chat-tab-label { display: none; } /* HIDDEN LABELS */
-
-        /* =================================================================
-           NEW PERSONAL TAB STYLES
-           ================================================================= */
-        .personal-card {
-            width: 100%;
-            height: 180px;
-            border-radius: 24px;
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 24px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: transform 0.2s;
-            border: 1px solid var(--glass-border);
-        }
-        .personal-card:active { transform: scale(0.98); }
-        
-        /* Gray Background */
-        .personal-bg {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: #e5e5ea; /* Light Gray */
-            z-index: 1;
-        }
-        [data-theme="dark"] .personal-bg {
-            background: #2c2c2e; /* Dark Gray */
-        }
-        
-        /* Glass Overlay */
-        .personal-glass {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(0px); /* Reduced blur for cleaner look */
-            z-index: 2;
-            display: flex; flex-direction: column; justify-content: flex-end;
-            padding: 20px;
-        }
-        
-        .p-card-avatar {
-            width: 70px; height: 70px; border-radius: 50%;
-            background-size: cover; background-position: center;
-            border: 3px solid rgba(255,255,255,0.8);
-            position: absolute; top: 20px; left: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .p-card-info { color: var(--text-primary); z-index: 5; }
-        .p-card-name { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
-        .p-card-bio { font-size: 13px; opacity: 0.6; }
-        
-        .p-card-shine {
-            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
-            transform: rotate(30deg);
-            animation: shine 6s infinite;
-            z-index: 3; pointer-events: none;
-        }
-        @keyframes shine { 0% { transform: translateX(-100%) rotate(30deg); } 20% { transform: translateX(100%) rotate(30deg); } 100% { transform: translateX(100%) rotate(30deg); } }
-
-        /* =================================================================
-           SETTINGS APP (REFACTORED - TRANSPARENT HEADER)
-           ================================================================= */
-        .settings-app {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: var(--bg-image); z-index: 600;
-            transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
-            display: flex; flex-direction: column; padding-top: 0; overflow-y: auto;
-        }
-        .settings-app.open { transform: translateX(0); }
-        
-        /* Transparent Header - No border, seamless */
-        .settings-header {
-            padding: 0 24px; display: flex; align-items: center; justify-content: center;
-            height: 100px;
-            padding-top: 50px; 
-            flex-shrink: 0; position: fixed; top: 0; left: 0; width: 100%; z-index: 10;
-            background: transparent; /* Seamless */
-            /* No border-bottom */
-        }
-        .settings-title-center { font-size: 17px; font-weight: 600; color: var(--text-primary); }
-        
-        .settings-back-btn { 
-            position: absolute; left: 24px;
-            top: 55px; 
-            width: 40px; height: 40px; background: rgba(255,255,255,0.7); 
-            backdrop-filter: blur(10px); border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); cursor: pointer;
-        }
-        [data-theme="dark"] .settings-back-btn { background: rgba(50,50,50,0.7); }
-
-        .settings-content {
-            padding: 120px 20px 40px; 
-            display: flex; flex-direction: column; align-items: center;
-        }
-        
-        .settings-profile-card {
-            display: flex; flex-direction: column; align-items: center; margin-bottom: 30px;
-            width: 100%;
-        }
-        .settings-avatar-container {
-            width: 100px; height: 100px; border-radius: 50%; 
-            background: #fff; padding: 3px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-bottom: 12px; cursor: pointer; position: relative;
-        }
-        .settings-avatar {
-            width: 100%; height: 100%; border-radius: 50%; 
-            background-size: cover; background-position: center; background-color: #eee;
-        }
-        .settings-avatar-overlay {
-            position: absolute; inset: 0; border-radius: 50%; background: rgba(0,0,0,0.2);
-            display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.2s;
-        }
-        .settings-avatar-container:hover .settings-avatar-overlay { opacity: 1; }
-        
-        .settings-name { font-size: 24px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
-        .settings-bio { font-size: 14px; color: var(--text-secondary); opacity: 0.8; }
-        
-        /* Grouped List Style */
-        .settings-group {
-            width: 100%;
-            background: var(--glass-card);
-            backdrop-filter: blur(20px);
-            border-radius: 16px;
-            overflow: hidden;
-            margin-bottom: 20px;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-        }
-        
-        .settings-item {
-            width: 100%; height: 50px; 
-            display: flex; align-items: center; padding: 0 16px;
-            cursor: pointer; transition: background 0.2s;
-            border-bottom: 0.5px solid rgba(128,128,128,0.15);
-        }
-        .settings-item:last-child { border-bottom: none; }
-        .settings-item:active { background: rgba(128,128,128,0.1); }
-        
-        /* Icons - No Background */
-        .st-icon-box {
-            width: 28px; height: 28px; background: transparent; /* Removed BG */
-            display: flex; align-items: center; justify-content: center;
-            margin-right: 12px; color: var(--text-primary); /* Default color */
-        }
-        .st-icon-box svg { stroke: currentColor; stroke-width: 2; width: 22px; height: 22px; }
-        
-        .st-label { flex: 1; font-size: 15px; font-weight: 500; color: var(--text-primary); }
-        .st-arrow { color: var(--text-secondary); opacity: 0.4; transform: scale(0.8); }
-
-        /* === ACCOUNT MANAGER VIEW (NEW) === */
-        #accountManagerView {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: var(--bg-image); z-index: 650;
-            transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
-            display: flex; flex-direction: column; overflow-y: auto;
-        }
-        #accountManagerView.open { transform: translateX(0); }
-
-        /* === API SETTINGS PAGE (New Feature) === */
-        #apiSettingsView {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: var(--bg-image); z-index: 650; /* Above Settings App */
-            transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
-            display: flex; flex-direction: column; overflow-y: auto;
-        }
-        #apiSettingsView.open { transform: translateX(0); }
-        
-        .api-header-btn-right {
-            position: absolute; right: 24px; top: 55px;
-            padding: 8px 16px; background: rgba(255,255,255,0.6);
-            border-radius: 20px; font-size: 14px; font-weight: 600;
-            backdrop-filter: blur(10px); cursor: pointer;
-        }
-
-        .ios-slider-row {
-            padding: 15px 16px; display: flex; flex-direction: column; gap: 8px;
-            border-bottom: 0.5px solid var(--form-border);
-        }
-        .ios-slider-header { display: flex; justify-content: space-between; font-size: 14px; font-weight: 500; }
-        .ios-slider-val { font-family: monospace; opacity: 0.7; }
-        
-        .fetch-btn {
-            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-            border-radius: 8px; background: rgba(128,128,128,0.1); cursor: pointer; margin-left: 10px;
-            flex-shrink: 0; /* 防止被挤压 */
-        }
-        
-        /* iOS Toggle Switch */
-        .ios-switch {
-            position: relative; display: inline-block; width: 50px; height: 30px;
-        }
-        .ios-switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc; transition: .4s; border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 26px; width: 26px; left: 2px; bottom: 2px;
-            background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        /* CHANGED: Use accent color instead of green */
-        input:checked + .slider { background-color: var(--accent-color); }
-        input:checked + .slider:before { transform: translateX(20px); }
-
-        /* API Presets Modal Styles */
-        .preset-tabs { display: flex; margin-bottom: 15px; background: rgba(128,128,128,0.1); border-radius: 10px; padding: 3px; }
-        .preset-tab { flex: 1; text-align: center; padding: 8px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text-secondary); }
-        .preset-tab.active { background: var(--glass-card); color: var(--text-primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .preset-list { max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-        .preset-item { 
-            display: flex; align-items: center; justify-content: space-between; 
-            padding: 12px; background: rgba(255,255,255,0.3); border-radius: 12px; 
-            border: 1px solid var(--glass-border); cursor: pointer;
-        }
-        .preset-item:active { background: rgba(255,255,255,0.5); }
-        .preset-del { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: var(--danger-color); }
-
-        /* Music App Styles */
-        .music-app { position: fixed; bottom: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-image); z-index: 500; transform: translateY(110%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); display: flex; flex-direction: column; padding: 50px 24px 40px; }
-        .music-app::before { content: ''; position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.4); backdrop-filter: blur(50px); -webkit-backdrop-filter: blur(50px); z-index: -1; }
-        [data-theme="dark"] .music-app::before { background: rgba(0,0,0,0.4); }
-        .music-app.open { transform: translateY(0); }
-        .player-header { width: 100%; height: 44px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; position: relative; z-index: 10; }
-        .search-overlay { position: absolute; top: 60px; left: 20px; right: 20px; background: var(--glass-card); backdrop-filter: blur(30px); border-radius: 20px; padding: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); z-index: 20; display: none; border: 1px solid var(--glass-border); }
-        .search-overlay.show { display: block; }
-        .music-input { width: 100%; height: 40px; background: rgba(120, 120, 128, 0.1); border-radius: 10px; border: none; padding: 0 10px; color: var(--text-primary); font-size: 16px; outline: none; margin-bottom: 10px; }
-        .search-results { max-height: 200px; overflow-y: auto; }
-        .search-item { padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; }
-        .search-add-btn { width: 32px; height: 32px; background: rgba(120,120,128,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); cursor: pointer; margin-left: 10px; }
-        .player-content-area { flex: 1; margin-bottom: 40px; position: relative; display: flex; align-items: center; justify-content: center; perspective: 1000px; }
-        .player-art { width: 320px; height: 320px; border-radius: 24px; background: #ccc; box-shadow: 0 25px 60px -10px rgba(0,0,0,0.35); background-size: cover; background-position: center; position: absolute; z-index: 2; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); opacity: 1; transform: scale(1); cursor: pointer; }
-        .lyrics-container { width: 340px; height: 360px; border-radius: 24px; position: absolute; z-index: 1; overflow-y: scroll; padding: 20px; text-align: center; mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%); opacity: 0; transform: scale(0.95); transition: all 0.4s ease; cursor: pointer; scrollbar-width: none; }
-        .lyrics-container::-webkit-scrollbar { display: none; }
-        .player-content-area.show-lyrics .player-art { opacity: 0; transform: scale(0.8) translateY(20px); pointer-events: none; }
-        .player-content-area.show-lyrics .lyrics-container { opacity: 1; transform: scale(1); z-index: 3; }
-        .lyric-line { font-size: 18px; font-weight: 600; color: var(--text-primary); opacity: 0.3; margin-bottom: 24px; transition: all 0.3s ease; transform-origin: center center; pointer-events: none; }
-        .lyric-line.active { opacity: 1; transform: scale(1.05); color: var(--text-primary); text-shadow: 0 0 20px rgba(255,255,255,0.3); }
-        .player-meta { width: 100%; margin-bottom: 30px; padding: 0 10px; }
-        .title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-        .player-title { font-size: 24px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 15px; }
-        .player-artist { font-size: 18px; color: var(--text-secondary); font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .share-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); background: rgba(120,120,128,0.1); border-radius: 50%; cursor: pointer; flex-shrink: 0; }
-        .player-progress { width: 100%; margin-bottom: 40px; padding: 0 10px; }
-        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 5px; background: var(--track-bg); border-radius: 2.5px; cursor: pointer; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 6px; border-radius: 3px; background: var(--track-fill); cursor: pointer; margin-top: -6.5px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); transition: transform 0.1s; }
-        .time-stamps { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-top: 10px; font-weight: 600; opacity: 0.8; }
-        .player-controls-new { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; margin-bottom: 20px; }
-        .ctrl-btn-s { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--text-primary); cursor: pointer; transition: 0.2s; }
-        .ctrl-btn-m { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; color: var(--text-primary); cursor: pointer; }
-        .play-btn-xl { width: 76px; height: 76px; background: var(--play-btn-bg); color: var(--play-btn-icon); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,0,0,0.15); transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); cursor: pointer; position: relative; z-index: 5; }
-        .play-btn-xl:active { transform: scale(0.92); }
-        .play-btn-xl svg { width: 34px; height: 34px; fill: currentColor !important; stroke: none !important; display: block; transform: translateX(2px); }
-        .play-btn-xl.is-playing svg { transform: translateX(0); }
-        .playlist-view { position: fixed; bottom: 0; left: 0; width: 100%; height: 65vh; background: var(--playlist-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 30px 30px 0 0; z-index: 550; transform: translateY(110%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); display: flex; flex-direction: column; border-top: 1px solid var(--glass-border); box-shadow: 0 -10px 40px rgba(0,0,0,0.1); }
-        .playlist-view.open { transform: translateY(0); }
-        .playlist-header { padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(128,128,128,0.1); }
-        .playlist-title { font-size: 18px; font-weight: 700; }
-        .playlist-actions { display: flex; gap: 15px; align-items: center; }
-        .playlist-action-btn { width: 30px; height: 30px; background: rgba(128,128,128,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
-        .playlist-content { flex: 1; overflow-y: auto; padding: 10px 20px; padding-bottom: 80px; }
-        .playlist-item { display: flex; align-items: center; gap: 15px; padding: 12px 0; border-bottom: 1px solid rgba(128,128,128,0.05); cursor: pointer; transition: all 0.3s ease; }
-        .p-idx { font-size: 14px; color: var(--text-secondary); width: 20px; text-align: center; transition: 0.2s; }
-        .p-info { flex: 1; display: flex; flex-direction: column; transition: 0.2s; }
-        .p-name { font-size: 16px; font-weight: 500; color: var(--text-primary); }
-        .p-artist { font-size: 13px; color: var(--text-secondary); }
-        .p-wave { width: 20px; display: none; }
-        .playlist-view.editing .p-idx { display: none !important; }
-        .playlist-view.editing .p-wave { display: none !important; }
-        .p-select { width: 0; overflow: hidden; opacity: 0; transition: 0.3s; display: flex; align-items: center; }
-        .playlist-view.editing .p-select { width: 30px; opacity: 1; }
-        .select-circle { width: 20px; height: 20px; border: 2px solid var(--text-secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        .playlist-item.selected .select-circle { background: var(--accent-color); border-color: var(--accent-color); }
-        
-        /* FIX: Ensure checkmark has no fill and white stroke */
-        .select-circle svg { width: 12px; height: 12px; stroke: #fff; stroke-width: 3; fill: none; display: none; }
-        
-        .playlist-item.selected .select-circle svg { display: block; }
-        .playlist-item.active .p-name { color: var(--accent-color); }
-        .playlist-item.active .p-idx { display: none; }
-        .playlist-item.active .p-wave { display: block; }
-        .delete-bar { position: absolute; bottom: 20px; left: 20px; right: 20px; height: 50px; background: var(--danger-color); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; box-shadow: 0 10px 20px rgba(255, 59, 48, 0.3); transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); cursor: pointer; z-index: 560; }
-        .playlist-view.editing.has-selection .delete-bar { transform: translateY(0); }
-        .toast-container { position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--toast-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 12px 24px; border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--glass-border); z-index: 600; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); display: flex; align-items: center; gap: 10px; }
-        .toast-container.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-        .toast-text { font-size: 14px; font-weight: 500; color: var(--text-primary); white-space: nowrap; }
-
-        /* === Notification Settings View (新增) === */
-        #notifySettingsView {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: var(--bg-image); z-index: 660; /* 层级高于普通设置 */
-            transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
-            display: flex; flex-direction: column; overflow-y: auto;
-        }
-        #notifySettingsView.open { transform: translateX(0); }
-
-        .notify-desc {
-            font-size: 13px; color: var(--text-secondary); padding: 0 16px 20px;
-            line-height: 1.4; text-align: center;
-        }
-
-        /* 重绘的测试按钮 */
-        .ios-btn-primary {
-            width: 90%; height: 50px;
-            background: var(--accent-color); color: #fff;
-            border-radius: 14px; font-size: 16px; font-weight: 600;
-            display: flex; align-items: center; justify-content: center;
-            margin: 20px auto 10px auto;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transition: transform 0.1s, opacity 0.1s;
-            cursor: pointer;
-        }
-        .ios-btn-primary:active { transform: scale(0.98); opacity: 0.9; }
-
+        canvas#capture-canvas { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- Status Bar -->
-    <div class="status-bar">
-        <span id="clock">21:37</span>
-        <div class="status-icons" style="display: flex; gap: 8px; align-items: center;">
-            <svg class="icon icon-bold" style="width:20px;height:20px;" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
-            <svg class="icon" style="width:26px;height:14px; stroke:var(--text-primary); stroke-width:2;" viewBox="0 0 26 14">
-                <rect x="1" y="1" width="22" height="12" rx="3" ry="3" fill="none"></rect>
-                <path d="M24 4v6" stroke-linecap="round"></path>
-                <rect id="battery-fill" x="3" y="3" width="18" height="8" rx="1" ry="1" fill="var(--battery-color)" stroke="none"></rect>
-            </svg>
+    <div id="video-container"><video id="video-el" autoplay playsinline></video></div>
+
+    <!-- 导航 -->
+    <div class="top-nav">
+        <div class="nav-btn" onclick="toggleHistory(true)">
+            <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
+        </div>
+        <div class="center-info">
+            <div class="caller-name">宝宝</div>
+            <div class="call-timer" id="call-timer">00:00</div>
+        </div>
+        <div class="nav-btn" onclick="toggleConfig(true)">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         </div>
     </div>
 
-    <!-- Dynamic Island -->
-    <div class="dynamic-island" id="dynamicIsland" onclick="toggleIsland()">
-        <div class="camera-dot"></div>
-        <div class="island-content-collapsed">
-             <div class="mini-cd-container"><div class="mini-cd" id="miniCd"></div></div>
-             <div class="mini-wave-container"><div class="mini-bar"></div><div class="mini-bar"></div><div class="mini-bar"></div><div class="mini-bar"></div><div class="mini-bar"></div></div>
-        </div>
-        <div class="island-content-expanded">
-            <div class="island-top-section"><div class="island-album" id="islandArt"></div><div class="island-info"><span class="island-title" id="islandTitle">Not Playing</span><span class="island-artist" id="islandArtist">Music</span></div></div>
-            <div class="island-progress-row"><div class="island-progress-bg"><div class="island-progress-fill" id="islandProgressBar"></div></div><div class="island-time"><span id="islandCurrTime">0:00</span><span id="islandTotTime">0:00</span></div></div>
-            <div class="island-controls">
-                <div class="island-btn" onclick="event.stopPropagation(); toggleMode()"><svg viewBox="0 0 24 24" style="fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></div>
-                <div class="island-btn" onclick="event.stopPropagation(); playPrev()"><svg viewBox="0 0 24 24" style="fill:currentColor;"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"></line></svg></div>
-                <div class="island-btn island-play-btn" onclick="event.stopPropagation(); togglePlay()"><svg id="islandPlayIcon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
-                <div class="island-btn" onclick="event.stopPropagation(); playNext()"><svg viewBox="0 0 24 24" style="fill:currentColor;"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg></div>
-                <div class="island-btn" onclick="event.stopPropagation(); togglePlaylist()"><svg viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></div>
+    <!-- 字幕区 -->
+    <div class="subtitle-area">
+        <div class="subtitle-text" id="subtitle-el"></div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="bottom-wrap">
+        <div class="input-bar">
+            <input type="text" class="chat-input" id="chat-input" placeholder="说点什么..." autocomplete="off">
+            <div class="send-mini-btn" onclick="handleSend()">
+                <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
             </div>
+        </div>
+        <div class="controls-row">
+            <div class="ctrl-btn btn-mute"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18.5V22M8 22h8"/></svg></div>
+            <div class="ctrl-btn btn-hangup" onclick="history.back()"><svg viewBox="0 0 24 24" fill="#fff"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
         </div>
     </div>
 
-    <!-- Main OS Screen -->
-    <div class="screen-container" id="screenContainer">
-        <!-- (Same as before) -->
-        <div class="page">
-            <div class="widget w-large">
-                <div class="widget-content">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <div style="display:flex; gap:15px; align-items:center;">
-                            <div style="width:50px; height:50px; border-radius:50%; background:#999; display:flex; align-items:center; justify-content:center; color:#fff;">
-                                <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                            </div>
-                            <div>
-                                <div class="w-title">@hajimi_helper</div>
-                                <div class="w-sub-text">IP: Shanghai</div>
-                            </div>
-                        </div>
-                        <svg class="icon" style="width:20px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-                    </div>
-                    <div style="display:flex; gap:10px; margin-top:10px;">
-                        <span style="font-size:12px; padding:6px 12px; background:rgba(0,0,0,0.05); border-radius:15px;">Share</span>
-                        <span style="font-size:12px; padding:6px 12px; background:var(--text-primary); color:var(--bg-image); border-radius:15px;">Edit</span>
-                    </div>
-                </div>
-            </div>
+    <!-- 历史侧滑栏 -->
+    <div class="history-drawer" id="history-drawer" onclick="toggleHistory(false)">
+        <div class="history-title">HISTORY LOG</div>
+        <div class="history-list" id="history-list" onclick="event.stopPropagation()"></div>
+    </div>
 
-            <div class="widget-row">
-                <div class="widget w-medium">
-                    <div class="widget-content">
-                        <div class="w-title">Weather</div>
-                        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
-                            <svg class="icon" style="width:40px; height:40px;" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
-                            <span class="w-main-text">6°C</span>
-                            <span class="w-sub-text">Cloudy</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="widget w-medium" style="display:flex; align-items:center; justify-content:center; text-align:center;">
-                    <span style="font-size:14px; font-style:italic; line-height:1.6;">"Simplicity is the ultimate sophistication."</span>
-                </div>
-            </div>
-
-            <div class="app-grid">
-                <div class="app-item" onclick="openChatApp()">
-                    <div class="app-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></div>
-                    <span class="app-name">社交</span>
-                </div>
-                <div class="app-item" onclick="openSettingsApp()"><div class="app-icon"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></div><span class="app-name">设置</span></div>
-                <div class="app-item"><div class="app-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></div><span class="app-name">见面</span></div>
-                <div class="app-item"><div class="app-icon"><svg class="icon" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg></div><span class="app-name">预设</span></div>
-                <div class="app-item"><div class="app-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div><span class="app-name">论坛</span></div>
-                <div class="app-item"><div class="app-icon"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div><span class="app-name">日常</span></div>
-                <div class="app-item"><div class="app-icon"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></div><span class="app-name">相册</span></div>
-                <div class="app-item"><div class="app-icon"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div><span class="app-name">日历</span></div>
-            </div>
+    <!-- 配置弹窗 -->
+    <div class="modal-overlay" id="config-modal">
+        <div class="config-card">
+            <h3 style="text-align:center">Settings</h3>
+            <input type="text" class="config-input" id="api-url" placeholder="API URL">
+            <input type="password" class="config-input" id="api-key" placeholder="API Key">
+            <input type="text" class="config-input" id="api-model" placeholder="Model (e.g. gpt-4o)">
+            <textarea class="config-input" id="api-persona" style="height:80px" placeholder="人设设定..."></textarea>
+            <button class="save-btn" onclick="saveSettings()">Save</button>
+            <button class="save-btn" style="background:#eee; color:#333; margin-top:0" onclick="toggleConfig(false)">Cancel</button>
         </div>
     </div>
 
-    <!-- Dock -->
-    <div class="dock-container">
-        <div class="dock">
-             <div class="app-item" style="margin-bottom:0;"><div class="app-icon" style="width:50px; height:50px; background:rgba(255,255,255,0.5);"><svg class="icon" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></div></div>
-             <div class="app-item" style="margin-bottom:0;"><div class="app-icon" style="width:50px; height:50px; background:rgba(255,255,255,0.5);"><svg class="icon" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div></div>
-             <div class="app-item" style="margin-bottom:0;"><div class="app-icon" style="width:50px; height:50px; background:rgba(255,255,255,0.5);"><svg class="icon" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></div></div>
-             <div class="app-item" style="margin-bottom:0;" onclick="openMusicApp()">
-                 <div class="app-icon" style="width:50px; height:50px; background:rgba(255,255,255,0.5);">
-                     <svg class="icon" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-                 </div>
-             </div>
-        </div>
-    </div>
-
-    <div class="theme-switcher" onclick="toggleTheme()">
-        <svg class="icon" style="width:20px; height:20px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-    </div>
-
-    <!-- Chat App -->
-    <div id="chatApp" class="chat-app">
-        <!-- (Same as before) -->
-        <div class="chat-header">
-            <div class="chat-header-btn" onclick="closeChatApp()">
-                <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
-            </div>
-            <div class="chat-header-title">Chat</div>
-            <div class="chat-header-btn" id="chatHeaderAddBtn" onclick="handleAddBtnClick()">
-                <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            </div>
-        </div>
-
-        <div class="chat-segment-container">
-            <div class="chat-segment" id="chatSegmentCapsule"></div>
-        </div>
-
-        <div class="chat-content">
-            <div id="chatHomeView" class="chat-view active">
-                <div style="text-align:center; padding:20px; opacity:0.5; display:none;" id="emptyChatMsg">暂无聊天</div>
-                <div id="activeChatList"></div>
-            </div>
-            <div id="chatLibraryView" class="chat-view">
-                <div id="libraryListContainer"><div id="libraryList"></div></div>
-                <div id="groupManagerContainer" style="display:none;">
-                    <div class="group-add-row">
-                        <input type="text" class="group-input" id="newGroupInput" placeholder="新分组名称">
-                        <div class="group-add-btn" onclick="addNewGroup()"><svg class="icon" style="width:24px;height:24px;stroke:#fff;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></div>
-                    </div>
-                    <div id="groupManageList" class="group-manage-list"></div>
-                </div>
-            </div>
-            <div id="chatMomentsView" class="chat-view"><div style="text-align:center; opacity:0.5; margin-top:50px;">Moments</div></div>
-            
-            <!-- NEW PERSONAL TAB -->
-            <div id="chatSettingsView" class="chat-view">
-                <div class="personal-card">
-                    <div class="personal-bg"></div>
-                    <div class="p-card-shine"></div>
-                    <div class="personal-glass">
-                        <div class="p-card-avatar" id="personalTabAvatar"></div>
-                        <div class="p-card-info">
-                            <div class="p-card-name" id="personalTabName" onclick="editPersonalText('name')">Hakimi</div>
-                            <div class="p-card-bio" id="personalTabBio" onclick="editPersonalText('bio')">@hajimi_helper</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="settings-group">
-                    <div class="settings-item" onclick="openAccountManager()">
-                        <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
-                        <div class="st-label">账号设置</div>
-                        <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
-                    </div>
-                    <div class="settings-item">
-                        <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg></div>
-                        <div class="st-label">钱包</div>
-                        <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
-                    </div>
-                </div>
-
-                <div class="settings-group">
-                    <div class="settings-item">
-                        <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg></div>
-                        <div class="st-label">黑名单</div>
-                        <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
-                    </div>
-                    <div class="settings-item">
-                        <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div>
-                        <div class="st-label">收藏</div>
-                        <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
-                    </div>
-                </div>
-
-                <div class="settings-group">
-                    <div class="settings-item">
-                        <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></div>
-                        <div class="st-label">关于本机</div>
-                        <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="chat-tab-bar-container">
-            <div class="chat-tab-bar">
-                <div class="chat-tab-item active" onclick="switchChatTab(0)"><svg class="icon chat-tab-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><span class="chat-tab-label">Home</span></div>
-                <div class="chat-tab-item" onclick="switchChatTab(1)"><svg class="icon chat-tab-icon" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg><span class="chat-tab-label">List</span></div>
-                <div class="chat-tab-item" onclick="switchChatTab(2)"><svg class="icon chat-tab-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="14.31" y1="8" x2="20.05" y2="17.94"></line><line x1="9.69" y1="8" x2="21.17" y2="8"></line><line x1="7.38" y1="12" x2="13.12" y2="2.06"></line><line x1="9.69" y1="16" x2="3.95" y2="6.06"></line><line x1="14.31" y1="16" x2="2.83" y2="16"></line><line x1="16.62" y1="12" x2="10.88" y2="21.94"></line></svg><span class="chat-tab-label">Moments</span></div>
-                <div class="chat-tab-item" onclick="switchChatTab(3)"><svg class="icon chat-tab-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="chat-tab-label">Personal</span></div>
-            </div>
-        </div>
-
-        <div id="chatInterface" class="chat-interface">
-            <div class="chat-int-header">
-                <div class="header-left" onclick="closeChatInterface()"><svg class="icon" viewBox="0 0 24 24" style="stroke-width:2.5;"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
-                <div class="header-center"><div class="header-name-text" id="chatIntName">Name</div><div class="header-status-text">Online</div></div>
-                <div class="header-right"><svg class="icon" viewBox="0 0 24 24" style="fill:currentColor; stroke:none; width:22px;"><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle><circle cx="5" cy="12" r="2"></circle></svg></div>
-            </div>
-            <div class="chat-int-body" id="chatIntBody" onclick="handleBodyClick()"></div>
-            <div class="chat-int-footer">
-                <div class="chat-func-btn"><svg class="icon" viewBox="0 0 24 24" style="stroke:#86868b; stroke-width:2;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></div>
-                <div class="chat-input-wrapper"><input type="text" class="chat-input-field" id="chatInput" placeholder="iMessage" onkeypress="handleChatInput(event)"><div class="chat-emoji-btn"><svg class="icon" viewBox="0 0 24 24" style="stroke:#86868b; stroke-width:1.5;"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg></div></div>
-                <div class="chat-send-btn" onclick="handleSendBtn()"><svg class="icon" viewBox="0 0 24 24" style="stroke:#fff; stroke-width:2.5; width:18px; height:18px;"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Settings App -->
-    <div id="settingsApp" class="settings-app">
-        <div class="settings-header">
-            <div class="settings-back-btn" onclick="closeSettingsApp()"><svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
-            <div class="settings-title-center">设置</div>
-        </div>
-        <div class="settings-content">
-            <div class="settings-profile-card">
-                <div class="settings-avatar-container" onclick="triggerSettingsAvatarUpload()">
-                    <div class="settings-avatar" id="settingsAvatar"></div>
-                    <div class="settings-avatar-overlay"><svg class="icon" style="stroke:#fff;" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg></div>
-                </div>
-                <input type="file" id="settingsAvatarInput" style="display:none;" accept="image/*" onchange="handleSettingsAvatar(this)">
-                <div class="settings-name" id="settingsName">Hakimi</div>
-                <div class="settings-bio" id="settingsBio">@hajimi_helper</div>
-            </div>
-            
-            <div class="settings-group">
-                <div class="settings-item" onclick="openApiSettings()">
-                    <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg></div>
-                    <div class="st-label">接口配置</div>
-                    <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
-                </div>
-                <div class="settings-item">
-                    <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></div>
-                    <div class="st-label">数据管理</div>
-                    <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
-                </div>
-            </div>
-
-            <div class="settings-group">
-                <div class="settings-item">
-                    <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg></div>
-                    <div class="st-label">外观显示</div>
-                    <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
-                </div>
-                <div class="settings-item">
-                    <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></div>
-                    <div class="st-label">记忆管理</div>
-                    <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
-                </div>
-            </div>
-
-            <div class="settings-group">
-                <div class="settings-item">
-                    <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></div>
-                    <div class="st-label">声音与触感</div>
-                    <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
-                </div>
-                <div class="settings-item" onclick="openNotifySettings()">
-                    <div class="st-icon-box"><svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></div>
-                    <div class="st-label">通知管理</div>
-                    <div class="st-arrow"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Account Manager View (NEW) -->
-    <div id="accountManagerView">
-        <div class="settings-header">
-            <div class="settings-back-btn" onclick="closeAccountManager()"><svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
-            <div class="settings-title-center">账号管理</div>
-        </div>
-        <div class="settings-content" style="padding-top:120px;">
-            <div class="preset-tabs">
-                <div class="preset-tab active" id="tabMainAcc" onclick="switchAccountTab('main')">主号</div>
-                <div class="preset-tab" id="tabAltAcc" onclick="switchAccountTab('alt')">小号</div>
-            </div>
-            <div class="library-add-card" style="margin-bottom:10px; height:50px;" onclick="openUserForm()">
-                <svg class="icon" style="width:20px;height:20px;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                <span>添加账号</span>
-            </div>
-            <div id="accountList" class="preset-list">
-                <!-- Populated by JS -->
-            </div>
-        </div>
-    </div>
-
-    <!-- User Form Modal (NEW) -->
-    <div id="userFormModal" class="modal-overlay" onclick="closeModals(event)">
-        <div class="modal-box" onclick="event.stopPropagation()">
-            <div class="modal-title" id="userFormTitle">添加账号</div>
-            <div class="avatar-upload-area">
-                <div class="avatar-circle" id="userFormAvatarPreview" onclick="triggerUserFormFileUpload()">
-                    <div class="avatar-cam-icon"><svg class="icon" style="width:16px; height:16px; stroke:#fff;" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg></div>
-                </div>
-            </div>
-            <input type="file" id="userFormFile" style="display:none;" accept="image/*" onchange="handleUserFileSelect(this)">
-            <div class="ios-form-group">
-                <div class="ios-input-row"><label class="ios-label">名称</label><input type="text" id="userName" class="ios-input" placeholder="输入名称"></div>
-                <div class="ios-input-row"><label class="ios-label">性别</label><select id="userGender" class="ios-select"><option value="Female">女</option><option value="Male">男</option><option value="Other">其他</option></select></div>
-                <div class="ios-input-row"><label class="ios-label">生日</label><input type="date" id="userBirthday" class="ios-input"></div>
-            </div>
-            <div class="ios-form-group">
-                <div class="ios-input-row" style="height:auto; padding:12px 16px; flex-direction:column; align-items:flex-start;">
-                    <label class="ios-label" style="margin-bottom:8px; width:100%;">人设详情</label>
-                    <textarea id="userPersona" class="ios-input" style="width:100%; text-align:left; min-height:80px; resize:none;" placeholder="描述你的性格、外貌等..."></textarea>
-                </div>
-            </div>
-            <div class="modal-btns">
-                <button class="btn btn-cancel" onclick="closeModals(null, true)">取消</button>
-                <button class="btn btn-primary" onclick="saveUserAccount()">保存</button>
-            </div>
-            <div id="userDeleteBtnArea" style="margin-top:10px; display:none;">
-                <button class="btn btn-danger" style="width:100%;" onclick="deleteUserAccount()">删除账号</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notification Settings View (NEW) -->
-    <div id="notifySettingsView">
-        <div class="settings-header">
-            <div class="settings-back-btn" onclick="closeNotifySettings()"><svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
-            <div class="settings-title-center">通知管理</div>
-        </div>
-        <div class="settings-content" style="padding-top:120px;">
-            <div class="notify-desc">
-                管理角色的消息通知行为。
-            </div>
-
-            <div class="ios-form-group">
-                <div class="ios-input-row">
-                    <label class="ios-label" style="flex:1;">离线通知</label>
-                    <label class="ios-switch">
-                        <input type="checkbox" id="offlineNotifyToggle" onchange="toggleOfflineNotify()">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="ios-input-row" id="notifyIntervalGroup" style="display:none; flex-direction:column; align-items:flex-start; height:auto; gap:10px; border-bottom:none;">
-                    <div style="width:100%; display:flex; justify-content:space-between; font-size:13px; opacity:0.7;">
-                        <span>通知间隔</span>
-                        <span style="font-family:monospace;" id="notifyIntervalVal">1h</span>
-                    </div>
-                    <input type="range" id="notifyInterval" min="1" max="24" step="1" value="1" style="width:100%;" oninput="updateNotifySlider(this.value)">
-                    <div style="width:100%; display:flex; justify-content:space-between; font-size:10px; opacity:0.4;">
-                        <span>1h</span><span>24h</span>
-                    </div>
-                </div>
-            </div>
-            <div class="notify-desc" style="text-align:left; padding-top:0;">
-                开启后，当您离开网页（切到后台）时，活跃的角色会尝试向您发送离线消息。
-            </div>
-
-            <!-- Background Activity Section -->
-            <div class="ios-form-group">
-                <div class="ios-input-row">
-                    <label class="ios-label" style="flex:1;">后台活动</label>
-                    <label class="ios-switch">
-                        <input type="checkbox" id="bgActivityToggle" onchange="toggleBackgroundActivity()">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="ios-input-row" id="bgActivityGroup" style="display:none; flex-direction:column; align-items:flex-start; height:auto; gap:10px; border-bottom:none;">
-                    <div style="width:100%; display:flex; justify-content:space-between; font-size:13px; opacity:0.7;">
-                        <span>活动频率</span>
-                        <span style="font-family:monospace;" id="bgIntervalVal">15min</span>
-                    </div>
-                    <input type="range" id="bgInterval" min="1" max="60" step="1" value="15" style="width:100%;" oninput="updateBgIntervalSlider(this.value)">
-                    <div style="width:100%; display:flex; justify-content:space-between; font-size:10px; opacity:0.4;">
-                        <span>1min</span><span>60min</span>
-                    </div>
-                </div>
-            </div>
-            <div class="notify-desc" style="text-align:left; padding-top:0;">
-                开启后，角色可以在您不操作时主动发起对话。
-            </div>
-
-            <div class="settings-group" style="background:transparent; border:none; box-shadow:none;">
-                <!-- 重绘的测试按钮 -->
-                <div class="ios-btn-primary" onclick="testNotification()">
-                    <svg class="icon" viewBox="0 0 24 24" style="margin-right:8px; stroke:#fff;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                    立即测试通知
-                </div>
-                <div style="text-align:center; margin-top:10px; font-size:12px; opacity:0.5;">
-                    测试将会在 5 秒后发送一条消息
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- API Settings View -->
-    <div id="apiSettingsView">
-        <div class="settings-header">
-            <div class="settings-back-btn" onclick="closeApiSettings()"><svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
-            <div class="settings-title-center">接口配置</div>
-            <div class="api-header-btn-right" onclick="openApiPresetModal()">预设</div>
-        </div>
-        <div class="settings-content" style="padding-top:120px;">
-            <div class="ios-form-group">
-                <div class="ios-input-row">
-                    <label class="ios-label">API URL</label>
-                    <input type="text" id="apiUrl" class="ios-input" placeholder="https://api.openai.com" onchange="saveApiConfig()">
-                </div>
-                <div class="ios-input-row">
-                    <label class="ios-label">API Key</label>
-                    <input type="text" id="apiKey" class="ios-input" placeholder="sk-..." onchange="saveApiConfig()">
-                </div>
-                <div class="ios-input-row">
-                    <label class="ios-label">模型</label>
-                    <select id="apiModel" class="ios-select" onchange="saveApiConfig()">
-                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                    </select>
-                    <div class="fetch-btn" onclick="fetchModels()">
-                        <svg class="icon" style="width:20px;height:20px;" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="settings-group">
-                <div class="ios-slider-row">
-                    <div class="ios-slider-header"><span>温度 (Temperature)</span><span class="ios-slider-val" id="tempVal">0.7</span></div>
-                    <input type="range" id="apiTemp" min="0" max="2" step="0.1" value="0.7" oninput="updateSliderVal('tempVal', this.value); saveApiConfig()">
-                </div>
-                <div class="ios-slider-row">
-                    <div class="ios-slider-header"><span>频率惩罚 (Penalty)</span><span class="ios-slider-val" id="penaltyVal">0</span></div>
-                    <input type="range" id="apiPenalty" min="-2" max="2" step="0.1" value="0" oninput="updateSliderVal('penaltyVal', this.value); saveApiConfig()">
-                </div>
-            </div>
-
-            <div class="ios-form-group">
-                <div class="ios-input-row" style="height:auto; padding:12px 16px; flex-direction:column; align-items:flex-start;">
-                    <label class="ios-label" style="margin-bottom:8px; width:100%;">破限词 (System Prompt)</label>
-                    <textarea id="apiJailbreak" class="ios-input" style="width:100%; text-align:left; min-height:80px; resize:none;" placeholder="输入全局破限词..." onchange="saveApiConfig()"></textarea>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- API Preset Modal -->
-    <div id="apiPresetModal" class="modal-overlay" onclick="closeModals(event)">
-        <div class="modal-box" onclick="event.stopPropagation()">
-            <div class="modal-title">API 预设管理</div>
-            <div class="preset-tabs">
-                <div class="preset-tab active" id="tabMain" onclick="switchPresetTab('main')">主预设</div>
-                <div class="preset-tab" id="tabSub" onclick="switchPresetTab('sub')">副预设</div>
-            </div>
-            <div class="library-add-card" style="margin-bottom:10px; height:50px;" onclick="saveCurrentAsPreset()">
-                <svg class="icon" style="width:20px;height:20px;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                <span>保存当前配置</span>
-            </div>
-            <div id="presetList" class="preset-list">
-                <!-- Populated by JS -->
-            </div>
-            <div class="modal-btns" style="margin-top:15px;">
-                <button class="btn btn-cancel" onclick="closeModals(null, true)">关闭</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modals (Existing) -->
-    <div id="addOptionModal" class="modal-overlay" onclick="closeModals(event)">
-        <div class="modal-box" style="width:70%; padding:0;" onclick="event.stopPropagation()">
-            <div class="option-item" onclick="openSelectFromLib()">从库中选择</div>
-            <div class="option-item" onclick="triggerFileUpload()">上传文件</div>
-            <div class="option-item" style="color:var(--text-secondary);" onclick="closeModals(null, true)">取消</div>
-        </div>
-    </div>
-
-    <div id="selectLibModal" class="modal-overlay" onclick="closeModals(event)">
-        <div class="modal-box" onclick="event.stopPropagation()">
-            <div class="modal-title">选择角色</div>
-            <div id="selectLibList" style="max-height:300px; overflow-y:auto;"></div>
-            <div class="modal-btns"><button class="btn btn-cancel" onclick="closeModals(null, true)">取消</button></div>
-        </div>
-    </div>
-
-    <div id="charFormModal" class="modal-overlay" onclick="closeModals(event)">
-        <div class="modal-box" onclick="event.stopPropagation()">
-            <div class="modal-title" id="charFormTitle">添加角色</div>
-            <div class="avatar-upload-area">
-                <div class="avatar-circle" id="charFormAvatarPreview" onclick="triggerFormFileUpload()">
-                    <div class="avatar-cam-icon"><svg class="icon" style="width:16px; height:16px; stroke:#fff;" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg></div>
-                </div>
-            </div>
-            <input type="file" id="charFormFile" style="display:none;" accept="image/*" onchange="handleFileSelect(this)">
-            <div class="ios-form-group">
-                <div class="ios-input-row"><label class="ios-label">姓名</label><input type="text" id="charName" class="ios-input" placeholder="输入姓名"></div>
-                <div class="ios-input-row"><label class="ios-label">备注</label><input type="text" id="charNote" class="ios-input" placeholder="添加备注"></div>
-                <div class="ios-input-row"><label class="ios-label">性别</label><select id="charGender" class="ios-select"><option value="Male">男</option><option value="Female">女</option><option value="Other">其他</option></select></div>
-            </div>
-            <div class="ios-form-group">
-                <div class="ios-input-row"><label class="ios-label">人设</label><input type="text" id="charPersona" class="ios-input" placeholder="简短描述"></div>
-                <div class="ios-input-row"><label class="ios-label">关联</label><select id="charRel" class="ios-select"><option value="">无 (使用当前活跃账号)</option></select></div>
-                <div class="ios-input-row"><label class="ios-label">分组</label><select id="charGroup" class="ios-select"></select></div>
-            </div>
-            <div class="modal-btns">
-                <button class="btn btn-cancel" onclick="closeModals(null, true)">取消</button>
-                <button class="btn btn-primary" onclick="saveCharacter()">保存</button>
-            </div>
-            <div id="charDeleteBtnArea" style="margin-top:10px; display:none;">
-                <button class="btn btn-danger" style="width:100%;" onclick="deleteCharacter()">删除角色</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Music App (Full Screen) -->
-    <div id="musicApp" class="music-app">
-        <div class="player-header">
-            <div class="header-btn" onclick="closeMusicApp()"><svg class="icon" style="width:28px; height:28px; stroke-width:1.5;" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
-            <div class="header-title">PLAYING FROM SEARCH</div>
-            <div class="header-btn" onclick="toggleSearch()"><svg class="icon" style="width:24px; height:24px; stroke-width:2;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
-            <div class="search-overlay" id="searchOverlay"><input type="text" class="music-input" placeholder="Search Songs..." id="searchInput" onkeypress="handleSearch(event)"><div class="search-results" id="searchResults"></div></div>
-        </div>
-        <div class="player-content-area" id="playerContentArea" onclick="toggleArtLyrics()"><div class="player-art" id="fullArt"></div><div class="lyrics-container" id="lyricsContainer"><div style="text-align:center; padding-top:100px; opacity:0.5;">Tap to load lyrics...</div></div></div>
-        <div class="player-meta"><div class="title-row"><div class="player-title" id="fullTitle">Not Playing</div><div class="share-btn"><svg class="icon" style="width:16px; height:16px; stroke-width:2;" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></div></div><div class="player-artist" id="fullArtist">Tap search icon to play</div></div>
-        <div class="player-progress"><input type="range" id="progressBar" value="0" min="0" max="100" oninput="seekAudio()"><div class="time-stamps"><span id="currentTime">0:00</span><span id="totalTime">0:00</span></div></div>
-        <div class="player-controls-new">
-            <div class="ctrl-btn-s" id="modeBtn" onclick="toggleMode()"><svg class="icon" style="width:24px;height:24px; stroke-width:1.5;" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></div>
-            <div class="ctrl-btn-m" onclick="playPrev()"><svg class="icon" style="width:34px;height:34px;" viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg></div>
-            <div class="play-btn-xl" id="mainPlayBtn" onclick="togglePlay()"><svg class="icon" id="fullPlayIcon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
-            <div class="ctrl-btn-m" onclick="playNext()"><svg class="icon" style="width:34px;height:34px;" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg></div>
-            <div class="ctrl-btn-s" onclick="togglePlaylist()"><svg class="icon" style="width:24px;height:24px; stroke-width:1.5;" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></div>
-        </div>
-    </div>
-
-    <!-- Playlist View -->
-    <div class="playlist-view" id="playlistView">
-        <div class="playlist-header"><span class="playlist-title">Playing Next</span><div class="playlist-actions"><div class="playlist-action-btn" id="manageBtn" onclick="togglePlaylistEditMode()"><svg class="icon" style="width:16px;height:16px;stroke-width:2;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div><div class="playlist-action-btn" onclick="togglePlaylist()"><svg class="icon" style="width:18px;height:18px;stroke-width:2.5;" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div></div></div>
-        <div class="playlist-content" id="playlistContent"><div style="text-align:center; padding:20px; opacity:0.6;">Queue is empty</div></div>
-        <div class="delete-bar" id="deleteBar" onclick="deleteSelectedSongs()">Delete Selected</div>
-    </div>
-
-    <!-- Toast -->
-    <div class="toast-container" id="toast"><svg class="icon" style="width:20px;height:20px;stroke-width:2;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg><span class="toast-text" id="toastText">Mode Changed</span></div>
-    <audio id="globalAudio"></audio>
+    <canvas id="capture-canvas"></canvas>
 
     <script>
-        const STATE_KEY = 'hajimi_os_state_v18'; 
-        let systemState = { 
-            themeIndex: 0, 
-            lastSong: null, 
-            playQueue: [], 
-            queueIndex: -1,
-            playMode: 0, 
-            characterLibrary: [], 
-            activeChats: [],
-            chatHistory: {},
-            groups: ['All', 'Love', 'Friend', 'Family'], 
-            currentGroupFilter: 'All', 
-            libraryViewMode: 'list', 
-            userSettings: { name: 'Hakimi', bio: '@hajimi_helper', avatar: '', gender: 'Female', birthday: '', persona: '' },
-            userAccounts: { main: [], alt: [] }, 
-            apiConfig: {
-                url: '',
-                key: '',
-                model: 'gpt-3.5-turbo',
-                temp: 0.7,
-                penalty: 0,
-                jailbreak: '',
-            },
-            apiPresets: { main: [], sub: [] },
-            fetchedModels: [],
-            notifyConfig: { enabled: false, interval: 1 },
-            backgroundConfig: { enabled: false, interval: 15 },
-            personalTabTitle: 'Personal Center' 
-        };
-        let lyricsData = [];
-        let currentSearchResults = []; 
-        let isEditMode = false;
-        let selectedIndices = new Set();
-        let editingCharId = null;
-        let editingUserId = null; 
-        let currentAvatarBase64 = '';
-        let currentUserAvatarBase64 = ''; 
-        let isPlaying = false;
-        let currentSong = null;
-        let currentTab = 0; 
-        let currentPresetTab = 'main';
-        let currentAccountTab = 'main'; 
-        let bgActivityIntervalId = null;
-
-        function compressImage(file, maxWidth = 300, quality = 0.7) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.src = event.target.result;
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
-                        canvas.width = width; canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', quality));
-                    };
-                    img.onerror = error => reject(error);
-                };
-                reader.onerror = error => reject(error);
-            });
-        }
-
-        function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(systemState)); }
+        const video = document.getElementById('video-el');
+        const canvas = document.getElementById('capture-canvas');
+        const subtitleEl = document.getElementById('subtitle-el');
+        const chatInput = document.getElementById('chat-input');
+        const historyList = document.getElementById('history-list');
         
-        function loadState() {
-            const saved = localStorage.getItem(STATE_KEY);
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    systemState = { ...systemState, ...parsed };
-                    
-                    if(!systemState.userSettings) systemState.userSettings = { name: 'Hakimi', bio: '@hajimi_helper', avatar: '', gender: 'Female', birthday: '', persona: '' };
-                    if(!systemState.userAccounts) systemState.userAccounts = { main: [], alt: [] };
-                    if(!systemState.chatHistory) systemState.chatHistory = {};
-                    if(!systemState.groups || systemState.groups.length === 0) systemState.groups = ['All', 'Love', 'Friend', 'Family'];
-                    if(!systemState.currentGroupFilter) systemState.currentGroupFilter = 'All';
-                    if(!systemState.apiConfig) systemState.apiConfig = { url: '', key: '', model: 'gpt-3.5-turbo', temp: 0.7, penalty: 0, jailbreak: '' };
-                    if(!systemState.apiPresets) systemState.apiPresets = { main: [], sub: [] };
-                    if(!systemState.fetchedModels) systemState.fetchedModels = [];
-                    if(!systemState.notifyConfig) systemState.notifyConfig = { enabled: false, interval: 1 };
-                    if(!systemState.backgroundConfig) systemState.backgroundConfig = { enabled: false, interval: 15 };
-                    if(!systemState.personalTabTitle) systemState.personalTabTitle = 'Personal Center';
+        let callHistory = []; // 用于历史回顾
 
-                    applyTheme(systemState.themeIndex);
-                    
-                    if (systemState.lastSong) {
-                        const s = systemState.lastSong;
-                        updatePlayerUI(s.name, s.artist, s.pic);
-                        currentSong = s;
-                        audio.src = `https://music-dl.sayqz.com/api/?source=netease&id=${s.id}&type=url`;
-                        fetchLyrics(s.id);
-                    }
-                    
-                    // Restore Notify UI
-                    document.getElementById('offlineNotifyToggle').checked = systemState.notifyConfig.enabled;
-                    document.getElementById('notifyInterval').value = systemState.notifyConfig.interval;
-                    updateNotifySlider(systemState.notifyConfig.interval);
-                    toggleOfflineNotify(false);
-
-                    // Restore Background Activity UI
-                    document.getElementById('bgActivityToggle').checked = systemState.backgroundConfig.enabled;
-                    document.getElementById('bgInterval').value = systemState.backgroundConfig.interval;
-                    updateBgIntervalSlider(systemState.backgroundConfig.interval);
-                    toggleBackgroundActivity(false);
-
-                    switchChatTab(0); 
-                    renderPlaylist();
-                    updateSettingsUI();
-                    populateModelSelect();
-                } catch (e) { console.error("Load state failed", e); }
-            } else { switchChatTab(0); }
-            
-            registerSW();
+        // --- 1. 摄像头 ---
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+                video.srcObject = stream;
+            } catch (err) { alert("摄像头权限被拒绝"); }
         }
 
-        // --- Notification Logic ---
-        async function registerSW() {
-            if ('serviceWorker' in navigator) {
-                try {
-                    const reg = await navigator.serviceWorker.register('sw.js');
-                    console.log('SW Registered:', reg.scope);
-                    navigator.serviceWorker.addEventListener('message', event => {
-                        if (event.data && event.data.type === 'OPEN_CHAT') {
-                            handleOfflineReply(event.data.charName, event.data.text);
-                        }
-                    });
-                } catch (error) { console.error('SW Fail:', error); }
-            }
+        // --- 2. 字幕显示逻辑 ---
+        function displaySubtitle(text) {
+            subtitleEl.classList.remove('active');
+            setTimeout(() => {
+                subtitleEl.innerText = text;
+                subtitleEl.classList.add('active');
+            }, 300);
         }
 
-        function openNotifySettings() { document.getElementById('notifySettingsView').classList.add('open'); }
-        function closeNotifySettings() { document.getElementById('notifySettingsView').classList.remove('open'); }
-
-        function updateNotifySlider(val) {
-            document.getElementById('notifyIntervalVal').textContent = val + 'h';
-            systemState.notifyConfig.interval = parseInt(val);
-            saveState();
+        // --- 3. 截取当前帧 ---
+        function getFrameBase64() {
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
         }
 
-        async function toggleOfflineNotify(save = true) {
-            const enabled = document.getElementById('offlineNotifyToggle').checked;
-            const group = document.getElementById('notifyIntervalGroup');
-            if (enabled) {
-                const perm = await Notification.requestPermission();
-                if (perm === 'granted') {
-                    group.style.display = 'flex';
-                    if(save) { systemState.notifyConfig.enabled = true; saveState(); showToast("离线通知已开启"); }
-                } else {
-                    document.getElementById('offlineNotifyToggle').checked = false;
-                    showToast("权限被拒绝");
-                }
-            } else {
-                group.style.display = 'none';
-                if(save) { systemState.notifyConfig.enabled = false; saveState(); }
-            }
-        }
+        // --- 4. API 调用 ---
+        async function handleSend() {
+            const text = chatInput.value.trim();
+            if(!text) return;
 
-        // --- Background Activity Logic ---
-        function updateBgIntervalSlider(val) {
-            document.getElementById('bgIntervalVal').textContent = val + 'min';
-            systemState.backgroundConfig.interval = parseInt(val);
-            saveState();
-            if(systemState.backgroundConfig.enabled) restartBgActivityTimer();
-        }
+            const config = JSON.parse(localStorage.getItem('hajimi_video_api') || '{}');
+            if(!config.key) return alert("请先在设置中配置 API Key");
 
-        function toggleBackgroundActivity(save = true) {
-            const enabled = document.getElementById('bgActivityToggle').checked;
-            const group = document.getElementById('bgActivityGroup');
-            if(enabled) {
-                group.style.display = 'flex';
-                if(save) { systemState.backgroundConfig.enabled = true; saveState(); showToast("后台活动已开启"); }
-                startBgActivityTimer();
-            } else {
-                group.style.display = 'none';
-                if(save) { systemState.backgroundConfig.enabled = false; saveState(); }
-                stopBgActivityTimer();
-            }
-        }
+            // 1. 用户消息上屏并记录
+            displaySubtitle(text);
+            addToHistory('User', text);
+            chatInput.value = '';
+            chatInput.blur();
 
-        function startBgActivityTimer() {
-            stopBgActivityTimer();
-            bgActivityIntervalId = setInterval(checkBgActivity, 60000);
-        }
+            // 2. 准备视觉请求
+            const base64Img = getFrameBase64();
+            let fetchUrl = config.url || 'https://api.openai.com/v1';
+            if (!fetchUrl.endsWith('/chat/completions')) fetchUrl = fetchUrl.replace(/\/+$/, '') + '/chat/completions';
 
-        function stopBgActivityTimer() {
-            if(bgActivityIntervalId) { clearInterval(bgActivityIntervalId); bgActivityIntervalId = null; }
-        }
-
-        function restartBgActivityTimer() {
-            stopBgActivityTimer();
-            startBgActivityTimer();
-        }
-
-        function checkBgActivity() {
-            if(!systemState.backgroundConfig.enabled) return;
-            const chance = 1 / systemState.backgroundConfig.interval; 
-            if(Math.random() < chance && systemState.activeChats.length > 0) {
-                triggerProactiveMessage();
-            }
-        }
-
-        function triggerProactiveMessage() {
-            const randomCharId = systemState.activeChats[Math.floor(Math.random() * systemState.activeChats.length)];
-            const char = systemState.characterLibrary.find(c => c.id === randomCharId);
-            if(!char) return;
-            
-            const msgs = ["在干嘛呢？", "突然想到你了。", "今天过得怎么样？", "看到一条消息觉得很有趣...", "有点无聊了。"];
-            const text = msgs[Math.floor(Math.random() * msgs.length)];
-            
-            handleOfflineReply(char.name, text); 
-            
-            if(Notification.permission === 'granted') {
-                new Notification(char.name, { body: text, icon: char.avatar });
-            }
-        }
-
-        function testNotification() {
-            if (Notification.permission !== 'granted') { showToast("请先开启开关并授权"); return; }
-            showToast("5秒后发送测试消息...");
-            if (navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({
-                    type: 'SCHEDULE_NOTIFY',
-                    title: '测试角色',
-                    body: '这是一条测试用的离线消息 👋',
-                    delay: 5000
-                });
-            }
-        }
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                if (systemState.notifyConfig.enabled && systemState.activeChats.length > 0) {
-                    scheduleOfflineChat();
-                }
-            }
-        });
-
-        function scheduleOfflineChat() {
-            const randomCharId = systemState.activeChats[Math.floor(Math.random() * systemState.activeChats.length)];
-            const char = systemState.characterLibrary.find(c => c.id === randomCharId);
-            if (!char) return;
-            const templates = ["你还在吗？", "刚刚看到一个东西，突然想你了。", "在忙吗？回我一下嘛。", "这里好安静，你在干嘛？", "我等你回来哦。"];
-            const msg = templates[Math.floor(Math.random() * templates.length)];
-            const delayMs = systemState.notifyConfig.interval * 60 * 60 * 1000; 
-            if (navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({
-                    type: 'SCHEDULE_NOTIFY',
-                    title: char.name,
-                    body: msg,
-                    delay: delayMs,
-                    charId: char.id
-                });
-            }
-        }
-
-        function handleOfflineReply(charName, text) {
-            showToast(`收到 ${charName} 的消息`);
-            const char = systemState.characterLibrary.find(c => c.name === charName);
-            if (char) {
-                if (!systemState.chatHistory[char.id]) systemState.chatHistory[char.id] = [];
-                systemState.chatHistory[char.id].push({ type: 'received', text: text });
-                saveState();
-                if(currentChatChar && currentChatChar.id === char.id) {
-                    renderMessageBubble('received', text);
-                    scrollToBottom();
-                }
-            }
-        }
-
-        // --- Existing Logic ---
-        function openSettingsApp() { document.getElementById('settingsApp').classList.add('open'); }
-        function closeSettingsApp() { document.getElementById('settingsApp').classList.remove('open'); }
-        
-        function triggerSettingsAvatarUpload() { document.getElementById('settingsAvatarInput').click(); }
-        async function handleSettingsAvatar(input) {
-            if (input.files && input.files[0]) {
-                try {
-                    const base64 = await compressImage(input.files[0]);
-                    systemState.userSettings.avatar = base64;
-                    saveState();
-                    updateSettingsUI();
-                    if(currentTab === 3) renderPersonalTab();
-                } catch(e) { showToast("Image Error"); }
-            }
-        }
-        function updateSettingsUI() {
-            document.getElementById('settingsName').textContent = systemState.userSettings.name;
-            document.getElementById('settingsBio').textContent = systemState.userSettings.bio;
-            if(systemState.userSettings.avatar) {
-                document.getElementById('settingsAvatar').style.backgroundImage = `url('${systemState.userSettings.avatar}')`;
-            }
-        }
-
-        function switchChatTab(index) {
-            currentTab = index;
-            const tabs = document.querySelectorAll('.chat-tab-item');
-            const views = document.querySelectorAll('.chat-view');
-            tabs.forEach(t => t.classList.remove('active'));
-            views.forEach(v => v.classList.remove('active'));
-            tabs[index].classList.add('active');
-            views[index].classList.add('active');
-            
-            const addBtn = document.getElementById('chatHeaderAddBtn');
-            const capsule = document.getElementById('chatSegmentCapsule');
-            
-            if(index === 0) { 
-                addBtn.style.display = 'flex'; addBtn.onclick = handleAddBtnClick; 
-                renderCapsuleForHome();
-                renderActiveChats();
-            } else if (index === 1) {
-                addBtn.style.display = 'none';
-                renderCapsuleForLibrary();
-                renderLibraryView();
-            } else if (index === 3) {
-                addBtn.style.display = 'none';
-                renderCapsuleForPersonal(); // New
-                renderPersonalTab(); 
-            } else { 
-                addBtn.style.display = 'none'; 
-                capsule.innerHTML = ''; 
-            }
-        }
-
-        function renderCapsuleForPersonal() {
-            const capsule = document.getElementById('chatSegmentCapsule');
-            capsule.innerHTML = `<div class="segment-opt active" onclick="editPersonalTabTitle()">${systemState.personalTabTitle}</div>`;
-        }
-
-        function editPersonalTabTitle() {
-            const newTitle = prompt("修改标题:", systemState.personalTabTitle);
-            if(newTitle) {
-                systemState.personalTabTitle = newTitle;
-                saveState();
-                renderCapsuleForPersonal();
-            }
-        }
-
-        function renderPersonalTab() {
-            document.getElementById('personalTabName').textContent = systemState.userSettings.name;
-            document.getElementById('personalTabBio').textContent = systemState.userSettings.bio;
-            if(systemState.userSettings.avatar) {
-                document.getElementById('personalTabAvatar').style.backgroundImage = `url('${systemState.userSettings.avatar}')`;
-            }
-        }
-
-        function editPersonalText(field) {
-            event.stopPropagation();
-            let currentVal = field === 'name' ? systemState.userSettings.name : systemState.userSettings.bio;
-            let promptText = field === 'name' ? "修改昵称" : "修改简介";
-            const newVal = prompt(promptText, currentVal);
-            if(newVal !== null) {
-                if(field === 'name') systemState.userSettings.name = newVal;
-                else systemState.userSettings.bio = newVal;
-                saveState();
-                renderPersonalTab();
-                updateSettingsUI();
-            }
-        }
-
-        function renderCapsuleForHome() {
-            const capsule = document.getElementById('chatSegmentCapsule');
-            let html = '';
-            systemState.groups.forEach(g => {
-                const active = systemState.currentGroupFilter === g ? 'active' : '';
-                html += `<div class="segment-opt ${active}" onclick="setHomeFilter('${g}')">${g}</div>`;
-            });
-            capsule.innerHTML = html;
-        }
-
-        function setHomeFilter(group) {
-            systemState.currentGroupFilter = group;
-            saveState();
-            renderCapsuleForHome();
-            renderActiveChats();
-        }
-
-        function renderCapsuleForLibrary() {
-            const capsule = document.getElementById('chatSegmentCapsule');
-            const isList = systemState.libraryViewMode === 'list';
-            capsule.innerHTML = `
-                <div class="segment-opt ${isList ? 'active' : ''}" onclick="setLibraryMode('list')">角色库</div>
-                <div class="segment-opt ${!isList ? 'active' : ''}" onclick="setLibraryMode('groups')">分组管理</div>
-            `;
-        }
-
-        function setLibraryMode(mode) {
-            systemState.libraryViewMode = mode;
-            renderCapsuleForLibrary();
-            renderLibraryView();
-        }
-
-        function renderLibraryView() {
-            const listContainer = document.getElementById('libraryListContainer');
-            const groupContainer = document.getElementById('groupManagerContainer');
-            if (systemState.libraryViewMode === 'list') {
-                listContainer.style.display = 'block';
-                groupContainer.style.display = 'none';
-                renderLibrary();
-            } else {
-                listContainer.style.display = 'none';
-                groupContainer.style.display = 'block';
-                renderGroupManager();
-            }
-        }
-
-        function renderGroupManager() {
-            const list = document.getElementById('groupManageList');
-            let html = '';
-            systemState.groups.forEach(g => {
-                if (g === 'All') return; 
-                html += `
-                <div class="group-item-row">
-                    <span class="group-item-name">${g}</span>
-                    <div class="group-item-action" onclick="deleteGroup('${g}')">
-                        <svg class="icon" style="width:16px;height:16px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    </div>
-                </div>`;
-            });
-            list.innerHTML = html;
-        }
-
-        function addNewGroup() {
-            const input = document.getElementById('newGroupInput');
-            const name = input.value.trim();
-            if (!name) return;
-            if (systemState.groups.includes(name)) { showToast("分组已存在"); return; }
-            systemState.groups.push(name);
-            saveState();
-            input.value = '';
-            renderGroupManager();
-            showToast("分组已添加");
-        }
-
-        function deleteGroup(name) {
-            if (confirm(`确定删除分组 "${name}" 吗?`)) {
-                systemState.groups = systemState.groups.filter(g => g !== name);
-                if (systemState.currentGroupFilter === name) systemState.currentGroupFilter = 'All';
-                systemState.characterLibrary.forEach(c => { if (c.group === name) c.group = 'Default'; });
-                saveState();
-                renderGroupManager();
-            }
-        }
-
-        function handleAddBtnClick() { document.getElementById('addOptionModal').classList.add('show'); }
-
-        function openSelectFromLib() {
-            closeModals(null, true);
-            const list = document.getElementById('selectLibList');
-            list.innerHTML = '';
-            const availableChars = systemState.characterLibrary.filter(c => !systemState.activeChats.includes(c.id));
-            if(availableChars.length === 0) {
-                list.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.5;">没有可用角色或库为空</div>';
-            } else {
-                availableChars.forEach(c => {
-                    const div = document.createElement('div');
-                    div.className = 'char-card-list';
-                    const displayName = c.note && c.note.trim() !== '' ? c.note : c.name;
-                    div.innerHTML = `<div class="char-avatar" style="background-image:url('${c.avatar || ''}')"></div><div class="char-info"><div class="char-name">${displayName}</div></div>`;
-                    div.onclick = () => {
-                        systemState.activeChats.push(c.id);
-                        saveState();
-                        renderActiveChats();
-                        renderLibrary();
-                        closeModals(null, true);
-                        showToast("已添加到聊天");
-                    };
-                    list.appendChild(div);
-                });
-            }
-            document.getElementById('selectLibModal').classList.add('show');
-        }
-
-        function openCharForm(charId = null) {
-            editingCharId = charId;
-            const title = document.getElementById('charFormTitle');
-            const delBtn = document.getElementById('charDeleteBtnArea');
-            document.getElementById('charName').value = '';
-            document.getElementById('charNote').value = '';
-            document.getElementById('charPersona').value = '';
-            document.getElementById('charFormAvatarPreview').style.backgroundImage = '';
-            currentAvatarBase64 = '';
-
-            const groupSelect = document.getElementById('charGroup');
-            groupSelect.innerHTML = '';
-            let options = `<option value="Default">Default</option>`;
-            systemState.groups.forEach(g => { if(g !== 'All' && g !== 'Default') options += `<option value="${g}">${g}</option>`; });
-            groupSelect.innerHTML = options;
-
-            // Populate User Accounts for Association
-            const relSelect = document.getElementById('charRel');
-            let relOptions = '<option value="">无 (使用当前活跃账号)</option>';
-            const allUsers = [...systemState.userAccounts.main, ...systemState.userAccounts.alt];
-            allUsers.forEach(u => {
-                relOptions += `<option value="${u.id}">${u.name}</option>`;
-            });
-            relSelect.innerHTML = relOptions;
-
-            if(charId) {
-                title.textContent = "编辑角色";
-                delBtn.style.display = 'block';
-                const char = systemState.characterLibrary.find(c => c.id === charId);
-                if(char) {
-                    document.getElementById('charName').value = char.name;
-                    document.getElementById('charNote').value = char.note;
-                    document.getElementById('charGender').value = char.gender;
-                    document.getElementById('charPersona').value = char.persona;
-                    document.getElementById('charGroup').value = char.group || 'Default';
-                    document.getElementById('charRel').value = char.linkedUser || ''; // Set linked user
-                    if(char.avatar) {
-                        currentAvatarBase64 = char.avatar;
-                        document.getElementById('charFormAvatarPreview').style.backgroundImage = `url('${char.avatar}')`;
-                    }
-                }
-            } else {
-                title.textContent = "添加角色";
-                delBtn.style.display = 'none';
-            }
-            document.getElementById('charFormModal').classList.add('show');
-        }
-
-        function triggerFormFileUpload() { document.getElementById('charFormFile').click(); }
-        async function handleFileSelect(input) {
-            if (input.files && input.files[0]) {
-                try {
-                    const base64 = await compressImage(input.files[0]);
-                    currentAvatarBase64 = base64;
-                    document.getElementById('charFormAvatarPreview').style.backgroundImage = `url('${currentAvatarBase64}')`;
-                } catch(e) { showToast("Image Error"); }
-            }
-        }
-
-        function saveCharacter() {
-            const name = document.getElementById('charName').value;
-            if(!name) { showToast("请输入姓名"); return; }
-            
-            const newChar = {
-                id: editingCharId || Date.now().toString(),
-                name: name,
-                note: document.getElementById('charNote').value,
-                gender: document.getElementById('charGender').value,
-                persona: document.getElementById('charPersona').value,
-                rel: document.getElementById('charRel').value, // Legacy field, kept for safety
-                linkedUser: document.getElementById('charRel').value, // New field for user binding
-                group: document.getElementById('charGroup').value,
-                avatar: currentAvatarBase64
+            const payload = {
+                model: config.model || "gpt-4o",
+                messages: [
+                    { role: "system", content: (config.persona || "你正在和用户视频。") + "。请观察画面回复，不要输出动作描述，只输出口语。"},
+                    { role: "user", content: [
+                        { type: "text", text: text },
+                        { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Img}` } }
+                    ]}
+                ],
+                max_tokens: 200
             };
 
-            if(editingCharId) {
-                const idx = systemState.characterLibrary.findIndex(c => c.id === editingCharId);
-                if(idx !== -1) systemState.characterLibrary[idx] = newChar;
-            } else {
-                systemState.characterLibrary.push(newChar);
-            }
-            
-            saveState();
-            renderLibrary();
-            renderActiveChats(); 
-            closeModals(null, true);
-            showToast("已保存");
-        }
-
-        function deleteCharacter() {
-            if(!editingCharId) return;
-            systemState.characterLibrary = systemState.characterLibrary.filter(c => c.id !== editingCharId);
-            systemState.activeChats = systemState.activeChats.filter(id => id !== editingCharId);
-            delete systemState.chatHistory[editingCharId];
-            saveState();
-            renderLibrary();
-            renderActiveChats();
-            closeModals(null, true);
-            showToast("已删除");
-        }
-
-        function renderLibrary() {
-            const list = document.getElementById('libraryList');
-            const addCardHTML = `<div class="library-add-card" onclick="openCharForm()"><svg class="icon" style="width:24px;height:24px;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>新建角色</span></div>`;
-            let itemsHTML = '';
-            systemState.characterLibrary.forEach(c => {
-                const isActive = systemState.activeChats.includes(c.id);
-                const displayName = c.note && c.note.trim() !== '' ? c.note : c.name;
-                itemsHTML += `
-                <div class="char-card-grid" onclick="openCharForm('${c.id}')">
-                    <div class="char-avatar" style="background-image:url('${c.avatar || ''}')"></div>
-                    <div class="char-name">
-                        ${displayName}
-                        <div class="status-dot ${isActive ? 'show' : ''}"></div>
-                    </div>
-                    <div class="char-desc">${c.note || '无备注'}</div>
-                </div>`;
-            });
-            list.innerHTML = addCardHTML + itemsHTML;
-        }
-
-        function renderActiveChats() {
-            const list = document.getElementById('activeChatList');
-            const emptyMsg = document.getElementById('emptyChatMsg');
-            list.innerHTML = '';
-            
-            const filter = systemState.currentGroupFilter;
-            let filteredIds = systemState.activeChats;
-            
-            if (filter !== 'All') {
-                filteredIds = systemState.activeChats.filter(id => {
-                    const char = systemState.characterLibrary.find(c => c.id === id);
-                    const charGroup = char ? (char.group || 'Default') : 'Default';
-                    return charGroup === filter;
-                });
-            }
-
-            if(filteredIds.length === 0) { emptyMsg.style.display = 'block'; emptyMsg.textContent = filter === 'All' ? '暂无聊天' : `分组 "${filter}" 下无聊天`; return; }
-            emptyMsg.style.display = 'none';
-            
-            filteredIds.forEach(id => {
-                const char = systemState.characterLibrary.find(c => c.id === id);
-                if(!char) return;
-                const displayName = char.note && char.note.trim() !== '' ? char.note : char.name;
-                const div = document.createElement('div');
-                div.className = 'char-card-list';
-                div.innerHTML = `<div class="char-avatar" style="background-image:url('${char.avatar || ''}')"></div><div class="char-info"><div class="char-name">${displayName}</div><div class="char-desc">点击开始聊天</div></div>`;
-                div.onclick = () => openChatInterface(char);
-                list.appendChild(div);
-            });
-        }
-
-        let currentChatChar = null;
-        function openChatInterface(char) {
-            currentChatChar = char;
-            const displayName = char.note && char.note.trim() !== '' ? char.note : char.name;
-            document.getElementById('chatIntName').textContent = displayName;
-            const body = document.getElementById('chatIntBody');
-            body.innerHTML = ''; 
-
-            if (!systemState.chatHistory[char.id]) {
-                systemState.chatHistory[char.id] = []; 
-                saveState();
-            }
-
-            systemState.chatHistory[char.id].forEach(msg => { renderMessageBubble(msg.type, msg.text); });
-            document.getElementById('chatInterface').classList.add('open');
-            scrollToBottom();
-        }
-
-        function renderMessageBubble(type, text) {
-            const body = document.getElementById('chatIntBody');
-            
-            // Create Row
-            const row = document.createElement('div');
-            row.className = `msg-row ${type === 'sent' ? 'msg-row-sent' : 'msg-row-received'}`;
-            
-            // Determine Avatar
-            let avatarUrl = '';
-            if (type === 'sent') {
-                // Check if char has linked user, otherwise use global settings
-                if (currentChatChar && currentChatChar.linkedUser) {
-                    const allUsers = [...systemState.userAccounts.main, ...systemState.userAccounts.alt];
-                    const linkedUser = allUsers.find(u => u.id === currentChatChar.linkedUser);
-                    avatarUrl = linkedUser ? linkedUser.avatar : systemState.userSettings.avatar;
-                } else {
-                    avatarUrl = systemState.userSettings.avatar;
-                }
-            } else {
-                avatarUrl = currentChatChar ? currentChatChar.avatar : '';
-            }
-            
-            const avatarDiv = document.createElement('div');
-            avatarDiv.className = 'msg-avatar';
-            avatarDiv.style.backgroundImage = `url('${avatarUrl}')`;
-            
-            // Create Bubble
-            const bubble = document.createElement('div');
-            bubble.className = `msg-bubble ${type === 'sent' ? 'msg-sent' : 'msg-received'}`;
-            bubble.textContent = text;
-            
-            // Assemble
-            if (type === 'sent') {
-                row.appendChild(bubble);
-                row.appendChild(avatarDiv);
-            } else {
-                row.appendChild(avatarDiv);
-                row.appendChild(bubble);
-            }
-            
-            body.appendChild(row);
-        }
-
-        function closeChatInterface() { document.getElementById('chatInterface').classList.remove('open'); currentChatChar = null; }
-        
-        function handleChatInput(e) { if(e.key === 'Enter') handleSendBtn(); }
-
-        function handleSendBtn() {
-            const input = document.getElementById('chatInput');
-            const text = input.value.trim();
-            
-            if (text && currentChatChar) {
-                renderMessageBubble('sent', text);
-                if(!systemState.chatHistory[currentChatChar.id]) systemState.chatHistory[currentChatChar.id] = [];
-                systemState.chatHistory[currentChatChar.id].push({ type: 'sent', text: text });
-                saveState();
-                input.value = '';
-                scrollToBottom();
-            } else if (!text && currentChatChar) {
-                triggerApiReply();
-            }
-        }
-
-        function handleBodyClick() { document.getElementById('chatInput').blur(); }
-
-        function showTypingIndicator() {
-            const body = document.getElementById('chatIntBody');
-            
-            const row = document.createElement('div');
-            row.className = 'msg-row msg-row-received';
-            row.id = 'typingRow';
-            
-            const avatarDiv = document.createElement('div');
-            avatarDiv.className = 'msg-avatar';
-            avatarDiv.style.backgroundImage = `url('${currentChatChar ? currentChatChar.avatar : ''}')`;
-            
-            const typingDiv = document.createElement('div');
-            typingDiv.className = 'msg-typing';
-            typingDiv.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
-            
-            row.appendChild(avatarDiv);
-            row.appendChild(typingDiv);
-            body.appendChild(row);
-            scrollToBottom();
-        }
-
-        function hideTypingIndicator() { const el = document.getElementById('typingRow'); if(el) el.remove(); }
-
-        async function triggerApiReply() {
-            if (!currentChatChar) return;
-            const cfg = systemState.apiConfig;
-            if (!cfg.url || !cfg.key) { showToast("请先配置 API"); return; }
-            showTypingIndicator();
-            
-            // Determine User Info (Linked vs Global)
-            let user = systemState.userSettings;
-            if (currentChatChar.linkedUser) {
-                const allUsers = [...systemState.userAccounts.main, ...systemState.userAccounts.alt];
-                const foundUser = allUsers.find(u => u.id === currentChatChar.linkedUser);
-                if (foundUser) user = foundUser;
-            }
-
-            const userInfo = `\n\n[User Info]\nName: ${user.name}\nGender: ${user.gender}\nBirthday: ${user.birthday || 'Unknown'}\nPersona: ${user.persona || 'None'}`;
-
-            const messages = [];
-            const systemContent = `你现在扮演角色：${currentChatChar.name}。人设：${currentChatChar.persona || '无'}。${userInfo}。重要规则：1. 必须使用第一人称。2. 绝对禁止使用任何动作描写、神态描写。3. 只能回复语言内容，就像微信聊天一样。4. 请一次性回复多条消息，用 ||| 分隔每一条消息。至少回复2条。${cfg.jailbreak}`;
-            messages.push({ role: "system", content: systemContent });
-
-            const history = systemState.chatHistory[currentChatChar.id] || [];
-            const recentHistory = history.slice(-10); 
-            recentHistory.forEach(msg => { messages.push({ role: msg.type === 'sent' ? 'user' : 'assistant', content: msg.text }); });
-
             try {
-                const endpoint = cfg.url.endsWith('/') ? `${cfg.url}v1/chat/completions` : `${cfg.url}/v1/chat/completions`;
-                const res = await fetch(endpoint, {
+                const res = await fetch(fetchUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.key}` },
-                    body: JSON.stringify({ model: cfg.model, messages: messages, temperature: parseFloat(cfg.temp), frequency_penalty: parseFloat(cfg.penalty) })
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.key}` },
+                    body: JSON.stringify(payload)
                 });
-
-                if (!res.ok) throw new Error("API Error");
                 const data = await res.json();
-                const reply = data.choices[0].message.content;
-                hideTypingIndicator();
-                const parts = reply.split('|||');
-                for (const part of parts) {
-                    const cleanPart = part.trim();
-                    if (cleanPart) {
-                        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 700));
-                        renderMessageBubble('received', cleanPart);
-                        systemState.chatHistory[currentChatChar.id].push({ type: 'received', text: cleanPart });
-                        saveState();
-                        scrollToBottom();
-                    }
-                }
-            } catch (e) {
-                console.error(e);
-                hideTypingIndicator();
-                showToast("请求失败");
+                const aiText = data.choices[0].message.content;
+                
+                // 3. AI回复上屏
+                setTimeout(() => {
+                    displaySubtitle(aiText);
+                    addToHistory('Char', aiText);
+                }, 800);
+
+            } catch (err) {
+                displaySubtitle("连接中断...");
             }
         }
 
-        function openApiSettings() {
-            document.getElementById('apiSettingsView').classList.add('open');
-            const cfg = systemState.apiConfig;
-            document.getElementById('apiUrl').value = cfg.url;
-            const keyInput = document.getElementById('apiKey');
-            if (cfg.key && cfg.key.length > 3) { keyInput.value = cfg.key.substring(0, 3) + '***'; } else { keyInput.value = cfg.key; }
-            document.getElementById('apiModel').value = cfg.model;
-            document.getElementById('apiTemp').value = cfg.temp;
-            document.getElementById('tempVal').textContent = cfg.temp;
-            document.getElementById('apiPenalty').value = cfg.penalty;
-            document.getElementById('penaltyVal').textContent = cfg.penalty;
-            document.getElementById('apiJailbreak').value = cfg.jailbreak;
-        }
-        function closeApiSettings() { document.getElementById('apiSettingsView').classList.remove('open'); }
-
-        function saveApiConfig() {
-            systemState.apiConfig.url = document.getElementById('apiUrl').value;
-            const keyInputVal = document.getElementById('apiKey').value;
-            if (!keyInputVal.includes('***')) { systemState.apiConfig.key = keyInputVal; }
-            systemState.apiConfig.model = document.getElementById('apiModel').value;
-            systemState.apiConfig.temp = document.getElementById('apiTemp').value;
-            systemState.apiConfig.penalty = document.getElementById('apiPenalty').value;
-            systemState.apiConfig.jailbreak = document.getElementById('apiJailbreak').value;
-            saveState();
+        // --- 5. 辅助功能 ---
+        function addToHistory(role, content) {
+            callHistory.push({ role, content });
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `<div class="h-role">${role}</div><div class="h-content">${content}</div>`;
+            historyList.appendChild(item);
+            historyList.scrollTop = historyList.scrollHeight;
         }
 
-        function updateSliderVal(id, val) { document.getElementById(id).textContent = val; }
-        
-        async function fetchModels() {
-            const url = document.getElementById('apiUrl').value;
-            const key = systemState.apiConfig.key; 
-            if(!url || !key) { showToast("请填写 URL 和 Key"); return; }
-            showToast("正在拉取模型...");
-            try {
-                const endpoint = url.endsWith('/') ? `${url}v1/models` : `${url}/v1/models`;
-                const res = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${key}` } });
-                if(!res.ok) throw new Error("Fetch failed");
-                const data = await res.json();
-                if(data && data.data && Array.isArray(data.data)) {
-                    systemState.fetchedModels = data.data.map(m => m.id);
-                    saveState();
-                    populateModelSelect();
-                    showToast(`成功获取 ${systemState.fetchedModels.length} 个模型`);
-                } else { showToast("格式不兼容"); }
-            } catch(e) { console.error(e); showToast("拉取失败"); }
-        }
+        function toggleHistory(show) { document.getElementById('history-drawer').classList.toggle('active', show); }
+        function toggleConfig(show) { document.getElementById('config-modal').classList.toggle('active', show); }
 
-        function populateModelSelect() {
-            const select = document.getElementById('apiModel');
-            const current = systemState.apiConfig.model;
-            let options = `<option value="${current}">${current} (Current)</option>`;
-            systemState.fetchedModels.forEach(m => { if(m !== current) options += `<option value="${m}">${m}</option>`; });
-            if(systemState.fetchedModels.length === 0 && current !== 'gpt-3.5-turbo') {
-                 options += `<option value="gpt-3.5-turbo">gpt-3.5-turbo</option>`;
-                 options += `<option value="gpt-4">gpt-4</option>`;
-            }
-            select.innerHTML = options;
-            select.value = current;
-        }
-
-        function openApiPresetModal() { document.getElementById('apiPresetModal').classList.add('show'); switchPresetTab('main'); }
-        function switchPresetTab(tab) {
-            currentPresetTab = tab;
-            document.getElementById('tabMain').classList.toggle('active', tab === 'main');
-            document.getElementById('tabSub').classList.toggle('active', tab === 'sub');
-            renderPresetList();
-        }
-
-        function renderPresetList() {
-            const list = document.getElementById('presetList');
-            const presets = systemState.apiPresets[currentPresetTab];
-            list.innerHTML = '';
-            if(presets.length === 0) { list.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.5;">暂无预设</div>'; return; }
-            presets.forEach((p, idx) => {
-                const div = document.createElement('div');
-                div.className = 'preset-item';
-                div.innerHTML = `<div style="flex:1;" onclick="loadPreset(${idx})"><div style="font-weight:600;">${p.name}</div><div style="font-size:11px; opacity:0.6;">${p.config.model}</div></div><div class="preset-del" onclick="deletePreset(${idx})"><svg class="icon" style="width:20px;height:20px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></div>`;
-                list.appendChild(div);
-            });
-        }
-
-        function saveCurrentAsPreset() {
-            const name = prompt("请输入预设名称:", "新预设");
-            if(!name) return;
-            const newPreset = { name: name, config: JSON.parse(JSON.stringify(systemState.apiConfig)) };
-            systemState.apiPresets[currentPresetTab].push(newPreset);
-            saveState();
-            renderPresetList();
-            showToast("预设已保存");
-        }
-
-        function loadPreset(idx) {
-            const preset = systemState.apiPresets[currentPresetTab][idx];
-            if(confirm(`确定加载预设 "${preset.name}" 吗? 当前未保存的配置将丢失。`)) {
-                systemState.apiConfig = JSON.parse(JSON.stringify(preset.config));
-                saveState();
-                openApiSettings(); 
-                closeModals(null, true);
-                showToast("预设已加载");
-            }
-        }
-
-        function deletePreset(idx) {
-            if(confirm("确定删除此预设吗?")) {
-                systemState.apiPresets[currentPresetTab].splice(idx, 1);
-                saveState();
-                renderPresetList();
-            }
-        }
-
-        // --- Account Manager Logic ---
-        function openAccountManager() { document.getElementById('accountManagerView').classList.add('open'); switchAccountTab('main'); }
-        function closeAccountManager() { document.getElementById('accountManagerView').classList.remove('open'); }
-        
-        function switchAccountTab(tab) {
-            currentAccountTab = tab;
-            document.getElementById('tabMainAcc').classList.toggle('active', tab === 'main');
-            document.getElementById('tabAltAcc').classList.toggle('active', tab === 'alt');
-            renderAccountList();
-        }
-
-        function renderAccountList() {
-            const list = document.getElementById('accountList');
-            const accounts = systemState.userAccounts[currentAccountTab];
-            list.innerHTML = '';
-            if(accounts.length === 0) { list.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.5;">暂无账号</div>'; return; }
-            accounts.forEach((acc, idx) => {
-                const div = document.createElement('div');
-                div.className = 'preset-item';
-                div.innerHTML = `
-                    <div style="flex:1; display:flex; align-items:center; gap:10px;" onclick="selectUserAccount(${idx})">
-                        <div style="width:30px; height:30px; border-radius:50%; background-image:url('${acc.avatar}'); background-size:cover; background-color:#ccc;"></div>
-                        <div>
-                            <div style="font-weight:600;">${acc.name}</div>
-                            <div style="font-size:11px; opacity:0.6;">${acc.persona ? acc.persona.substring(0, 20) + '...' : '无'}</div>
-                        </div>
-                    </div>
-                    <div class="preset-del" onclick="editUserAccount(${idx})"><svg class="icon" style="width:18px;height:18px;color:var(--text-primary);" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
-                `;
-                list.appendChild(div);
-            });
-        }
-
-        function openUserForm(idx = null) {
-            editingUserId = idx;
-            const title = document.getElementById('userFormTitle');
-            const delBtn = document.getElementById('userDeleteBtnArea');
-            
-            document.getElementById('userName').value = '';
-            document.getElementById('userGender').value = 'Female'; // Changed default to Female
-            document.getElementById('userBirthday').value = '';
-            document.getElementById('userPersona').value = '';
-            document.getElementById('userFormAvatarPreview').style.backgroundImage = '';
-            currentUserAvatarBase64 = '';
-
-            if(idx !== null) {
-                title.textContent = "编辑账号";
-                delBtn.style.display = 'block';
-                const acc = systemState.userAccounts[currentAccountTab][idx];
-                document.getElementById('userName').value = acc.name;
-                document.getElementById('userGender').value = acc.gender;
-                document.getElementById('userBirthday').value = acc.birthday;
-                document.getElementById('userPersona').value = acc.persona;
-                if(acc.avatar) {
-                    currentUserAvatarBase64 = acc.avatar;
-                    document.getElementById('userFormAvatarPreview').style.backgroundImage = `url('${acc.avatar}')`;
-                }
-            } else {
-                title.textContent = "添加账号";
-                delBtn.style.display = 'none';
-            }
-            document.getElementById('userFormModal').classList.add('show');
-        }
-
-        function triggerUserFormFileUpload() { document.getElementById('userFormFile').click(); }
-        async function handleUserFileSelect(input) {
-            if (input.files && input.files[0]) {
-                try {
-                    const base64 = await compressImage(input.files[0]);
-                    currentUserAvatarBase64 = base64;
-                    document.getElementById('userFormAvatarPreview').style.backgroundImage = `url('${currentUserAvatarBase64}')`;
-                } catch(e) { showToast("Image Error"); }
-            }
-        }
-
-        function saveUserAccount() {
-            const name = document.getElementById('userName').value;
-            if(!name) { showToast("请输入名称"); return; }
-            
-            const newAcc = {
-                id: editingUserId !== null && systemState.userAccounts[currentAccountTab][editingUserId].id ? systemState.userAccounts[currentAccountTab][editingUserId].id : Date.now().toString(), // Generate ID
-                name: name,
-                gender: document.getElementById('userGender').value,
-                birthday: document.getElementById('userBirthday').value,
-                persona: document.getElementById('userPersona').value,
-                avatar: currentUserAvatarBase64
+        function saveSettings() {
+            const config = {
+                url: document.getElementById('api-url').value,
+                key: document.getElementById('api-key').value,
+                model: document.getElementById('api-model').value,
+                persona: document.getElementById('api-persona').value
             };
-
-            if(editingUserId !== null) {
-                systemState.userAccounts[currentAccountTab][editingUserId] = newAcc;
-            } else {
-                systemState.userAccounts[currentAccountTab].push(newAcc);
-            }
-            
-            saveState();
-            renderAccountList();
-            closeModals(null, true);
-            showToast("账号已保存");
+            localStorage.setItem('hajimi_video_api', JSON.stringify(config));
+            toggleConfig(false);
         }
 
-        function editUserAccount(idx) {
-            event.stopPropagation();
-            openUserForm(idx);
-        }
+        // 计时器
+        let seconds = 0;
+        setInterval(() => {
+            seconds++;
+            let m = Math.floor(seconds/60).toString().padStart(2,'0');
+            let s = (seconds%60).toString().padStart(2,'0');
+            document.getElementById('call-timer').innerText = `${m}:${s}`;
+        }, 1000);
 
-        function deleteUserAccount() {
-            if(editingUserId === null) return;
-            if(confirm("确定删除此账号吗?")) {
-                systemState.userAccounts[currentAccountTab].splice(editingUserId, 1);
-                saveState();
-                renderAccountList();
-                closeModals(null, true);
-                showToast("账号已删除");
-            }
-        }
+        window.onload = () => {
+            initCamera();
+            const config = JSON.parse(localStorage.getItem('hajimi_video_api') || '{}');
+            document.getElementById('api-url').value = config.url || '';
+            document.getElementById('api-key').value = config.key || '';
+            document.getElementById('api-model').value = config.model || '';
+            document.getElementById('api-persona').value = config.persona || '';
+        };
 
-        function selectUserAccount(idx) {
-            const acc = systemState.userAccounts[currentAccountTab][idx];
-            if(confirm(`切换到账号 "${acc.name}"?`)) {
-                systemState.userSettings = { 
-                    name: acc.name, 
-                    bio: `@${acc.name}`, 
-                    avatar: acc.avatar,
-                    gender: acc.gender,
-                    birthday: acc.birthday,
-                    persona: acc.persona
-                };
-                saveState();
-                renderPersonalTab();
-                updateSettingsUI();
-                closeAccountManager();
-                showToast(`已切换至 ${acc.name}`);
-            }
-        }
-
-        function scrollToBottom() { const body = document.getElementById('chatIntBody'); body.scrollTop = body.scrollHeight; }
-        function closeModals(e, force = false) { if(force || e.target.classList.contains('modal-overlay')) { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show')); } }
-        function triggerFileUpload() { closeModals(null, true); openCharForm(); setTimeout(triggerFormFileUpload, 300); }
-
-        function updateClock() { document.getElementById('clock').textContent = `${String(new Date().getHours()).padStart(2,'0')}:${String(new Date().getMinutes()).padStart(2,'0')}`; }
-        setInterval(updateClock, 1000); updateClock();
-        const batteryFill = document.getElementById('battery-fill');
-        function updateBatteryUI(level) { batteryFill.setAttribute('width', level * 18); if(level <= 0.2) batteryFill.style.fill = '#ff3b30'; else batteryFill.style.fill = 'var(--battery-color)'; }
-        if ('getBattery' in navigator) navigator.getBattery().then(b => { updateBatteryUI(b.level); b.addEventListener('levelchange', () => updateBatteryUI(b.level)); }); else updateBatteryUI(1.0);
-        const themes = ['', 'dark'];
-        let currentThemeIndex = 0;
-        function applyTheme(index) { currentThemeIndex = index; const theme = themes[index]; if (theme) document.body.setAttribute('data-theme', theme); else document.body.removeAttribute('data-theme'); if ('getBattery' in navigator) navigator.getBattery().then(b => updateBatteryUI(b.level)); }
-        function toggleTheme() { currentThemeIndex = (currentThemeIndex + 1) % themes.length; systemState.themeIndex = currentThemeIndex; applyTheme(currentThemeIndex); saveState(); }
-        const musicApp = document.getElementById('musicApp');
-        const chatApp = document.getElementById('chatApp');
-        const searchOverlay = document.getElementById('searchOverlay');
-        const searchInput = document.getElementById('searchInput');
-        const searchResults = document.getElementById('searchResults');
-        const audio = document.getElementById('globalAudio');
-        const playlistView = document.getElementById('playlistView');
-        const playlistContent = document.getElementById('playlistContent');
-        const lyricsContainer = document.getElementById('lyricsContainer');
-        const playerContentArea = document.getElementById('playerContentArea');
-        const manageBtn = document.getElementById('manageBtn');
-        const fullArt = document.getElementById('fullArt');
-        const fullTitle = document.getElementById('fullTitle');
-        const fullArtist = document.getElementById('fullArtist');
-        const fullPlayIcon = document.getElementById('fullPlayIcon');
-        const mainPlayBtn = document.getElementById('mainPlayBtn');
-        const islandPlayIcon = document.getElementById('islandPlayIcon');
-        const island = document.getElementById('dynamicIsland');
-        const islandArt = document.getElementById('islandArt');
-        const islandTitle = document.getElementById('islandTitle');
-        const islandArtist = document.getElementById('islandArtist');
-        const miniCd = document.getElementById('miniCd');
-        const progressBar = document.getElementById('progressBar');
-        const currTimeEl = document.getElementById('currentTime');
-        const totTimeEl = document.getElementById('totalTime');
-        
-        function openMusicApp() { musicApp.classList.add('open'); }
-        function closeMusicApp() { musicApp.classList.remove('open'); }
-        function openChatApp() { chatApp.classList.add('open'); }
-        function closeChatApp() { chatApp.classList.remove('open'); }
-        function toggleSearch() { searchOverlay.classList.toggle('show'); }
-        function toggleIsland() { island.classList.toggle('expanded'); }
-        function togglePlaylist() { playlistView.classList.toggle('open'); if(playlistView.classList.contains('open')) { isEditMode = false; selectedIndices.clear(); updateEditModeUI(); renderPlaylist(); } }
-        function toggleArtLyrics() { playerContentArea.classList.toggle('show-lyrics'); }
-        function togglePlaylistEditMode() { if(systemState.playQueue.length === 0) return; isEditMode = !isEditMode; if(!isEditMode) selectedIndices.clear(); updateEditModeUI(); renderPlaylist(); }
-        function updateEditModeUI() { if (isEditMode) { playlistView.classList.add('editing'); manageBtn.innerHTML = '<span style="font-size:12px; font-weight:600;">Done</span>'; manageBtn.style.width = '50px'; manageBtn.style.borderRadius = '15px'; } else { playlistView.classList.remove('editing'); manageBtn.innerHTML = '<svg class="icon" style="width:16px;height:16px;stroke-width:2;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>'; manageBtn.style.width = '30px'; manageBtn.style.borderRadius = '50%'; } updateDeleteBar(); }
-        function toggleSelection(index, event) { event.stopPropagation(); if (selectedIndices.has(index)) selectedIndices.delete(index); else selectedIndices.add(index); const item = document.getElementById(`plist-item-${index}`); if(item) { if(selectedIndices.has(index)) item.classList.add('selected'); else item.classList.remove('selected'); } updateDeleteBar(); }
-        function updateDeleteBar() { if(selectedIndices.size > 0) playlistView.classList.add('has-selection'); else playlistView.classList.remove('has-selection'); }
-        function deleteSelectedSongs() { if(selectedIndices.size === 0) return; const indicesToDelete = Array.from(selectedIndices).sort((a, b) => b - a); indicesToDelete.forEach(idx => { systemState.playQueue.splice(idx, 1); }); if(systemState.queueIndex >= systemState.playQueue.length) { systemState.queueIndex = 0; } selectedIndices.clear(); isEditMode = false; updateEditModeUI(); renderPlaylist(); saveState(); showToast("Playlist Updated"); }
-        async function handleSearch(e) {
-            if (e.key === 'Enter') {
-                const keyword = searchInput.value.trim();
-                if (!keyword) return;
-                searchResults.innerHTML = '<div style="text-align:center; padding:10px;">搜索中...</div>';
-                try {
-                    const res = await fetch(`https://music-dl.sayqz.com/api/?source=netease&type=search&keyword=${keyword}`);
-                    const data = await res.json();
-                    if (data.code === 200 && data.data.results) { currentSearchResults = data.data.results; renderResults(currentSearchResults); } 
-                    else searchResults.innerHTML = '<div style="text-align:center; padding:10px;">无结果</div>';
-                } catch (err) { searchResults.innerHTML = '<div style="text-align:center; padding:10px;">出错</div>'; }
-            }
-        }
-        function renderResults(songs) { let html = ''; songs.forEach((song, index) => { html += `<div class="search-item"><div class="search-info" onclick="playFromSearch(${index})"><div style="font-weight:600;">${song.name}</div><div style="font-size:12px; opacity:0.7;">${song.artist}</div></div><div class="search-add-btn" onclick="addToQueueFromSearch(${index})"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></div></div>`; }); searchResults.innerHTML = html; }
-        function playFromSearch(index) { if(systemState.playQueue.length === 0) systemState.playQueue = [currentSearchResults[index]]; else { systemState.playQueue.splice(systemState.queueIndex + 1, 0, currentSearchResults[index]); systemState.queueIndex++; } loadSong(currentSearchResults[index]); searchOverlay.classList.remove('show'); playlistView.classList.remove('open'); island.classList.remove('expanded'); }
-        function addToQueueFromSearch(index) { const song = currentSearchResults[index]; systemState.playQueue.push(song); showToast("已添加到队列"); saveState(); }
-        function renderPlaylist() {
-            if(systemState.playQueue.length === 0) { playlistContent.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">队列为空</div>'; return; }
-            let html = '';
-            systemState.playQueue.forEach((song, index) => {
-                const isActive = index === systemState.queueIndex ? 'active' : '';
-                const isSelected = selectedIndices.has(index) ? 'selected' : '';
-                const clickAction = isEditMode ? `toggleSelection(${index}, event)` : `playFromQueue(${index})`;
-                html += `<div class="playlist-item ${isActive} ${isSelected}" id="plist-item-${index}" onclick="${clickAction}"><div class="p-select"><div class="select-circle"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div></div><div class="p-idx">${index + 1}</div><div class="p-wave"><div class="island-wave" style="height:14px;"><div class="bar" style="background:var(--accent-color); width:2px;"></div><div class="bar" style="background:var(--accent-color); width:2px; animation-delay:0.1s;"></div><div class="bar" style="background:var(--accent-color); width:2px; animation-delay:0.2s;"></div></div></div><div class="p-info"><div class="p-name">${song.name}</div><div class="p-artist">${song.artist}</div></div></div>`;
-            });
-            playlistContent.innerHTML = html;
-        }
-        function playFromQueue(index) { if (isEditMode) return; systemState.queueIndex = index; loadSong(systemState.playQueue[index]); playlistView.classList.remove('open'); }
-        function playNext() { if (systemState.playQueue.length === 0) return; let nextIdx = systemState.queueIndex + 1; if (nextIdx >= systemState.playQueue.length) nextIdx = 0; systemState.queueIndex = nextIdx; loadSong(systemState.playQueue[nextIdx]); }
-        function playPrev() { if (systemState.playQueue.length === 0) return; let prevIdx = systemState.queueIndex - 1; if (prevIdx < 0) prevIdx = systemState.playQueue.length - 1; systemState.queueIndex = prevIdx; loadSong(systemState.playQueue[prevIdx]); }
-        function loadSong(song) {
-            const pic = `https://music-dl.sayqz.com/api/?source=netease&id=${song.id}&type=pic`;
-            currentSong = { ...song, pic }; systemState.lastSong = currentSong; saveState();
-            audio.src = `https://music-dl.sayqz.com/api/?source=netease&id=${song.id}&type=url`;
-            audio.play().then(() => { isPlaying = true; updatePlayIcons(); island.classList.add('playing-state'); }).catch(e => console.error(e));
-            updatePlayerUI(song.name, song.artist, pic); fetchLyrics(song.id);
-        }
-        async function fetchLyrics(id) {
-            lyricsContainer.innerHTML = '<div style="text-align:center; padding-top:100px; opacity:0.5;">加载歌词中...</div>';
-            try {
-                const res = await fetch(`https://music-dl.sayqz.com/api/?source=netease&id=${id}&type=lrc`);
-                const text = await res.text();
-                const lines = text.split('\n'); lyricsData = [];
-                const regex = /\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/;
-                lines.forEach(line => { const match = line.match(regex); if(match) { const min = parseInt(match[1]); const sec = parseInt(match[2]); const ms = parseInt(match[3]); const content = match[4].trim(); if(content) { lyricsData.push({ time: min * 60 + sec + ms/1000, text: content }); } } });
-                if(lyricsData.length > 0) { renderLyrics(); } else { lyricsContainer.innerHTML = '<div style="text-align:center; padding-top:100px; opacity:0.5;">暂无歌词</div>'; }
-            } catch(e) { lyricsContainer.innerHTML = '<div style="text-align:center; padding-top:100px; opacity:0.5;">歌词错误</div>'; }
-        }
-        function renderLyrics() { let html = ''; lyricsData.forEach((line, idx) => { html += `<div class="lyric-line" id="line-${idx}">${line.text}</div>`; }); html += '<div style="height:200px;"></div>'; lyricsContainer.innerHTML = html; }
-        function updatePlayerUI(name, artist, picUrl) { fullTitle.textContent = name; fullArtist.textContent = artist; fullArt.style.backgroundImage = `url('${picUrl}')`; islandTitle.textContent = name; islandArtist.textContent = artist; islandArt.style.backgroundImage = `url('${picUrl}')`; miniCd.style.backgroundImage = `url('${picUrl}')`; }
-        function togglePlay() { if (!currentSong) return; if (audio.paused) { audio.play(); isPlaying = true; island.classList.add('playing-state'); } else { audio.pause(); isPlaying = false; island.classList.remove('playing-state'); } updatePlayIcons(); }
-        function updatePlayIcons() { const playPath = '<polygon points="5 3 19 12 5 21 5 3"></polygon>'; const pausePath = '<rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect>'; const content = isPlaying ? pausePath : playPath; fullPlayIcon.innerHTML = content; islandPlayIcon.innerHTML = content; if(isPlaying) mainPlayBtn.classList.add('is-playing'); else mainPlayBtn.classList.remove('is-playing'); }
-        audio.addEventListener('timeupdate', () => {
-            const cur = audio.currentTime; const dur = audio.duration || 0; const percent = (cur / dur) * 100;
-            progressBar.value = percent; currTimeEl.textContent = formatTime(cur); totTimeEl.textContent = formatTime(dur);
-            progressBar.style.background = `linear-gradient(to right, var(--text-primary) 0%, var(--text-primary) ${percent}%, var(--track-bg) ${percent}%, var(--track-bg) 100%)`;
-            if(document.getElementById('islandProgressBar')) { document.getElementById('islandProgressBar').style.width = `${percent}%`; islandCurrTime.textContent = formatTime(cur); islandTotTime.textContent = formatTime(dur); }
-            if(lyricsData.length > 0 && playerContentArea.classList.contains('show-lyrics')) {
-                let activeIdx = -1; for(let i=0; i<lyricsData.length; i++) { if(cur >= lyricsData[i].time) { activeIdx = i; } else { break; } }
-                document.querySelectorAll('.lyric-line').forEach((el, idx) => { if(idx === activeIdx) { el.classList.add('active'); el.scrollIntoView({ behavior: "smooth", block: "center" }); } else { el.classList.remove('active'); } });
-            }
-        });
-        audio.addEventListener('ended', () => { 
-            if (systemState.playMode === 1) { 
-                audio.currentTime = 0; audio.play(); 
-            } else { 
-                playNext(); 
-            } 
-        });
-        function seekAudio() { const percent = progressBar.value; const dur = audio.duration; audio.currentTime = (percent / 100) * dur; }
-        function formatTime(s) { if(isNaN(s)) return "0:00"; const mins = Math.floor(s / 60); const secs = Math.floor(s % 60); return `${mins}:${secs.toString().padStart(2, '0')}`; }
-        const toast = document.getElementById('toast'); const toastText = document.getElementById('toastText'); let toastTimeout;
-        function showToast(msg) { toastText.textContent = msg; toast.classList.add('show'); clearTimeout(toastTimeout); toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 2000); }
-        
-        function toggleMode() { 
-            systemState.playMode = (systemState.playMode === 0) ? 1 : 0; 
-            saveState();
-            if (systemState.playMode === 1) { showToast("已切换至：单曲循环"); } 
-            else { showToast("已切换至：列表循环"); } 
-        }
-
-        window.onload = loadState;
+        // 监听回车
+        chatInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSend(); });
     </script>
 </body>
 </html>
