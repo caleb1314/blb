@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Video Chat - Hajimi Edition</title>
+    <title>Video Session - Hajimi</title>
     <style>
         :root {
             --ios-red: #ff3b30;
             --ios-green: #34c759;
             --glass: rgba(255, 255, 255, 0.15);
-            --glass-deep: rgba(0, 0, 0, 0.4);
-            --text-color: #ffffff;
+            --subtitle-color: #ffffff;
             --char-avatar: url('https://file.uhsea.com/2603/b5e1c21ceb4cbacec44c8b073a301b89FP.jpg');
         }
 
@@ -20,142 +19,153 @@
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
         }
 
-        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #1c1c1e; color: #fff; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #000; color: #fff; }
 
-        /* === 1. 接听界面 (极简 iOS 风) === */
+        /* === 1. 接听界面 (重绘版) === */
         #incoming-call {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 5000; display: flex; flex-direction: column; align-items: center;
             justify-content: space-between; padding: 100px 0 120px;
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.6s ease;
         }
         #incoming-call::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--char-avatar) center/cover; filter: blur(45px) brightness(0.65); z-index: -1;
+            background: var(--char-avatar) center/cover; filter: blur(50px) brightness(0.5); z-index: -1;
         }
         .caller-avatar-big {
-            width: 110px; height: 110px; border-radius: 50%;
+            width: 105px; height: 105px; border-radius: 50%;
             background: var(--char-avatar) center/cover;
-            border: 1px solid rgba(255,255,255,0.25); margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.3); margin-bottom: 20px;
         }
-        .caller-name-big { font-size: 30px; font-weight: 600; letter-spacing: 0.5px; }
-        .caller-status { font-size: 14px; opacity: 0.75; margin-top: 10px; font-weight: 400; }
+        .caller-name-big { font-size: 28px; font-weight: 500; letter-spacing: 0.5px; }
+        .caller-status { font-size: 14px; opacity: 0.6; margin-top: 10px; }
 
-        /* 通话控制大按钮 */
-        .call-btn-large {
-            width: 72px; height: 72px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; border: none; transition: transform 0.2s;
+        .call-btn-group { display: flex; gap: 70px; }
+        .call-btn-wrap { text-align: center; cursor: pointer; }
+        .call-btn-icon {
+            width: 68px; height: 68px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin-bottom: 12px; transition: transform 0.2s;
         }
-        .call-btn-large:active { transform: scale(0.9); }
-        .call-btn-large.accept { background: var(--ios-green); }
-        .call-btn-large.decline { background: var(--ios-red); }
-        .call-btn-large svg { width: 32px; height: 32px; fill: #fff; }
+        .call-btn-icon:active { transform: scale(0.9); }
+        .call-btn-icon svg { width: 32px; height: 32px; fill: none; stroke: #fff; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+        .btn-accept { background: var(--ios-green); }
+        .btn-decline { background: var(--ios-red); }
 
-        /* === 2. 视频通话布局 === */
+        /* === 2. 视频视图控制 === */
         #main-view {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #2c2c2e var(--char-avatar) center/cover;
-            z-index: 1; display: none;
+            background: #1c1c1e var(--char-avatar) center/cover; z-index: 1; display: none;
         }
         #user-pip {
             position: absolute; top: calc(env(safe-area-inset-top) + 60px); right: 16px;
-            width: 110px; height: 160px; background: #000; border-radius: 14px;
-            z-index: 100; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-            border: 0.5px solid rgba(255,255,255,0.15); display: none;
+            width: 105px; height: 155px; background: #000; border-radius: 14px;
+            z-index: 100; overflow: hidden; border: 0.5px solid rgba(255,255,255,0.2); display: none;
         }
-        #user-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        #user-video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* === 3. 顶部与底部 UI === */
+        /* === 3. 顶栏与字幕 === */
         .top-nav {
             position: absolute; top: calc(env(safe-area-inset-top) + 10px);
             left: 0; width: 100%; z-index: 200;
             display: flex; justify-content: space-between; align-items: center; padding: 0 16px; display: none;
         }
         .nav-btn {
-            width: 40px; height: 40px; border-radius: 50%;
-            background: var(--glass); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 0.5px solid rgba(255,255,255,0.2);
+            width: 38px; height: 38px; border-radius: 50%;
+            background: var(--glass); backdrop-filter: blur(20px); border: 0.5px solid rgba(255,255,255,0.1);
             display: flex; align-items: center; justify-content: center;
         }
-        .nav-btn svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2.2; }
+        .nav-btn svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 1.8; }
 
-        .subtitle-area { position: absolute; bottom: 22%; left: 10%; right: 10%; z-index: 300; text-align: center; pointer-events: none; }
-        .subtitle-text { font-size: 18px; font-weight: 500; line-height: 1.6; color: var(--text-color); text-shadow: 0 2px 8px rgba(0,0,0,0.8); opacity: 0; transform: translateY(10px); transition: all 0.4s ease; }
+        .subtitle-area {
+            position: absolute; bottom: 24%; left: 12%; right: 12%;
+            z-index: 300; text-align: center; pointer-events: none;
+        }
+        .subtitle-text {
+            font-size: 18px; font-weight: 500; line-height: 1.6;
+            color: var(--subtitle-color); text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            opacity: 0; transform: translateY(8px); transition: all 0.4s ease;
+        }
         .subtitle-text.active { opacity: 1; transform: translateY(0); }
 
-        .bottom-wrap { position: absolute; bottom: calc(env(safe-area-inset-bottom) + 20px); left: 0; width: 100%; z-index: 400; display: none; flex-direction: column; align-items: center; gap: 20px; }
-        .input-bar { width: 92%; max-width: 500px; height: 52px; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(35px); -webkit-backdrop-filter: blur(35px); border-radius: 26px; border: 0.5px solid rgba(255,255,255,0.2); display: flex; align-items: center; padding: 0 8px; gap: 8px; }
-        .input-icon-btn { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .input-icon-btn svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; }
-        .chat-input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 16px; }
+        /* === 4. 底部输入与更多菜单 === */
+        .bottom-wrap {
+            position: absolute; bottom: calc(env(safe-area-inset-bottom) + 20px);
+            left: 0; width: 100%; z-index: 400; display: none;
+            flex-direction: column; align-items: center; gap: 20px;
+        }
+        .input-bar {
+            width: 92%; max-width: 480px; height: 50px;
+            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(30px);
+            border-radius: 25px; border: 0.5px solid rgba(255,255,255,0.15);
+            display: flex; align-items: center; padding: 0 6px; gap: 8px;
+        }
+        .input-btn { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .input-btn svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 1.8; }
+        .chat-input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 15px; }
 
         /* 回复键光圈 */
-        .reply-btn-wrap { position: relative; width: 38px; height: 38px; }
-        .thinking-ring { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); opacity: 0; scale: 0.8; transition: all 0.3s; }
-        .thinking-ring.active { animation: ring-pulse 1.5s infinite; opacity: 1; scale: 1.1; }
-        @keyframes ring-pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.35); opacity: 0; } 100% { transform: scale(1); opacity: 0; } }
+        .thinking-ring {
+            position: absolute; top: 0; left: 0; width: 38px; height: 38px;
+            border-radius: 50%; border: 1.5px solid #fff; opacity: 0; scale: 0.8;
+        }
+        .thinking-ring.active { animation: ring-pulse 1.2s infinite; opacity: 1; }
+        @keyframes ring-pulse { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.4); opacity: 0; } }
 
-        .send-btn { background: #fff; }
-        .send-btn svg { stroke: #000; }
-
-        /* === 4. 功能面板 (纯文字菜单) === */
         #more-menu {
             position: absolute; bottom: 85px; left: 16px;
-            width: 160px; background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(20px); border-radius: 18px; overflow: hidden;
-            display: none; flex-direction: column; z-index: 500;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            width: 160px; background: rgba(255,255,255,0.95);
+            border-radius: 16px; overflow: hidden; display: none;
+            flex-direction: column; z-index: 500; box-shadow: 0 8px 25px rgba(0,0,0,0.25);
         }
-        .menu-item {
-            padding: 15px 20px; color: #1c1c1e; font-size: 14px; font-weight: 600;
-            text-align: left; cursor: pointer; transition: background 0.2s;
-        }
-        .menu-item:active { background: rgba(0,0,0,0.08); }
-        .menu-item:not(:last-child) { border-bottom: 0.5px solid rgba(0,0,0,0.06); }
+        .menu-item { padding: 14px 18px; color: #000; font-size: 14px; font-weight: 500; cursor: pointer; text-align: left; }
+        .menu-item:active { background: #f2f2f7; }
+        .menu-item:not(:last-child) { border-bottom: 0.5px solid rgba(0,0,0,0.05); }
 
-        /* === 5. 历史记录遮罩 === */
-        #history-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: none; }
-        .history-panel { position: absolute; top: 0; left: 0; width: 80%; max-width: 300px; height: 100%; background: rgba(28, 28, 30, 0.96); backdrop-filter: blur(30px); padding: 60px 20px; display: flex; flex-direction: column; transform: translateX(-100%); transition: transform 0.4s ease; }
+        /* === 5. 设置面板与历史记录 === */
+        #history-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.3); z-index: 1000; display: none;
+        }
+        .history-panel {
+            position: absolute; top: 0; left: 0; width: 280px; height: 100%;
+            background: rgba(28, 28, 30, 0.95); backdrop-filter: blur(25px);
+            padding: 60px 20px; display: flex; flex-direction: column;
+            transform: translateX(-100%); transition: transform 0.4s cubic-bezier(0.1, 0.9, 0.2, 1);
+        }
         #history-overlay.active { display: block; }
         #history-overlay.active .history-panel { transform: translateX(0); }
-        .history-list { flex: 1; overflow-y: auto; scrollbar-width: none; }
-        .history-list::-webkit-scrollbar { display: none; }
-        .h-item { margin-bottom: 18px; font-size: 14px; line-height: 1.5; border-bottom: 0.5px solid rgba(255,255,255,0.08); padding-bottom: 10px; }
-        .h-role { font-size: 10px; font-weight: 900; color: #8e8e93; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .h-item { margin-bottom: 12px; font-size: 14px; color: #eee; border-bottom: 0.5px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
+        .h-role { font-size: 9px; font-weight: 800; color: #888; margin-bottom: 2px; text-transform: uppercase; }
 
-        /* 设置弹窗 */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(15px); z-index: 6000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(15px);
+            z-index: 6000; display: none; align-items: center; justify-content: center; padding: 20px;
+        }
         .modal-overlay.active { display: flex; }
-        .config-card { width: 100%; max-width: 340px; background: #fff; border-radius: 28px; padding: 24px; color: #000; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
-        .config-input { width: 100%; padding: 12px; border-radius: 12px; border: none; background: #f2f2f7; font-size: 14px; outline: none; }
-        .save-btn { width: 100%; padding: 14px; border-radius: 14px; background: #000; color: #fff; font-weight: 600; border: none; }
+        .config-card { width: 100%; max-width: 340px; background: #fff; border-radius: 24px; padding: 24px; color: #000; display: flex; flex-direction: column; gap: 15px; }
+        .config-input { width: 100%; padding: 12px; border-radius: 10px; border: none; background: #f2f2f7; font-size: 14px; outline: none; }
+        .color-row { display: flex; align-items: center; justify-content: space-between; padding: 0 5px; }
+        .save-btn { width: 100%; padding: 14px; border-radius: 12px; background: #000; color: #fff; font-weight: 600; border: none; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <!-- 1. 接听界面 -->
     <div id="incoming-call">
-        <div class="caller-info">
+        <div style="text-align:center">
             <center><div class="caller-avatar-big"></div></center>
             <div class="caller-name-big">宝宝</div>
-            <div class="caller-status">视频通话...</div>
+            <div class="caller-status">邀请你进行视频通话...</div>
         </div>
-        <div style="display:flex; gap:60px;">
-            <!-- 挂断 -->
-            <div onclick="history.back()" style="cursor:pointer; text-align:center;">
-                <button class="call-btn-large decline">
-                    <svg viewBox="0 0 24 24"><path d="M6.62 10.79a15.15 15.15 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.17-.24 11.72 11.72 0 0 0 3.67 1.18 1 1 0 0 1 .83 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 .83 11.72 11.72 0 0 0 1.18 3.67 1 1 0 0 1-.24 1.17l-2.2 2.12z" transform="rotate(135 12 12)"/></svg>
-                </button>
-                <div style="margin-top:12px; font-size:13px; font-weight:500;">拒绝</div>
+        <div class="call-btn-group">
+            <div class="call-btn-wrap" onclick="history.back()">
+                <div class="call-btn-icon btn-decline"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+                <div style="font-size:12px; opacity:0.8;">拒绝</div>
             </div>
-            <!-- 接听 -->
-            <div onclick="acceptCall()" style="cursor:pointer; text-align:center;">
-                <button class="call-btn-large accept">
-                    <svg viewBox="0 0 24 24"><path d="M6.62 10.79a15.15 15.15 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.17-.24 11.72 11.72 0 0 0 3.67 1.18 1 1 0 0 1 .83 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 .83 11.72 11.72 0 0 0 1.18 3.67 1 1 0 0 1-.24 1.17l-2.2 2.12z" transform="rotate(-45 12 12)"/></svg>
-                </button>
-                <div style="margin-top:12px; font-size:13px; font-weight:500;">接听</div>
+            <div class="call-btn-wrap" onclick="acceptCall()">
+                <div class="call-btn-icon btn-accept"><svg viewBox="0 0 24 24"><path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+                <div style="font-size:12px; opacity:0.8;">接听</div>
             </div>
         </div>
     </div>
@@ -167,8 +177,8 @@
     <div class="top-nav" id="top-nav">
         <div class="nav-btn" onclick="toggleHistory(true)"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></div>
         <div style="text-align:center;">
-            <div style="font-weight:600; font-size:17px;">宝宝</div>
-            <div id="timer" style="font-size:11px; opacity:0.8;">00:00</div>
+            <div style="font-weight:600; font-size:16px;">宝宝</div>
+            <div id="timer" style="font-size:11px; opacity:0.7;">00:00</div>
         </div>
         <div class="nav-btn" onclick="toggleConfig(true)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
     </div>
@@ -176,128 +186,140 @@
     <div class="subtitle-area"><div class="subtitle-text" id="subtitle-el"></div></div>
 
     <div class="bottom-wrap" id="bottom-wrap">
-        <!-- 更多菜单 (纯文字) -->
         <div id="more-menu">
             <div class="menu-item" onclick="handleMoreAction('regenerate')">重新生成回复</div>
-            <div class="menu-item" id="cam-toggle-btn" onclick="handleMoreAction('camera')">关闭摄像头</div>
+            <div class="menu-item" id="cam-toggle-label" onclick="handleMoreAction('camera')">关闭摄像头</div>
             <div class="menu-item" onclick="handleMoreAction('describe')">描述画面内容</div>
-            <div class="menu-item" onclick="handleMoreAction('color')">更换字体颜色</div>
         </div>
 
         <div class="input-bar">
-            <!-- 更多按键 (信封) -->
-            <div class="input-icon-btn" onclick="toggleMoreMenu()"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg></div>
-            <input type="text" class="chat-input" id="chat-input" placeholder="和TA说点什么..." autocomplete="off">
-            <!-- 回复按键 (带光圈) -->
-            <div class="reply-btn-wrap">
-                <div class="thinking-ring" id="thinking-ring"></div>
-                <div class="input-icon-btn reply-btn" style="background:rgba(255,255,255,0.1);" onclick="handleAIReplyOnly()"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+            <div class="input-btn" onclick="toggleMoreMenu()"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg></div>
+            <input type="text" class="chat-input" id="chat-input" placeholder="输入消息..." autocomplete="off">
+            <div style="position:relative">
+                <div class="thinking-ring" id="ring"></div>
+                <div class="input-btn" onclick="handleAIReplyOnly()"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
             </div>
-            <div class="input-icon-btn send-btn" onclick="handleSend()"><svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></div>
+            <div class="input-btn" style="background:#fff" onclick="handleSend()"><svg viewBox="0 0 24 24" style="stroke:#000"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></div>
         </div>
-        <div style="display:flex; gap:40px;">
-            <div class="nav-btn" style="width:56px; height:56px; background:rgba(255,255,255,0.12);" onclick="flipCamera()"><svg viewBox="0 0 24 24" style="width:24px; height:24px;"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
-            <div class="nav-btn" style="width:56px; height:56px; background:var(--ios-red);" onclick="history.back()"><svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:#fff; stroke:none;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-            <div class="nav-btn" style="width:56px; height:56px; background:rgba(255,255,255,0.12);"><svg viewBox="0 0 24 24" style="width:24px; height:24px;"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18.5V22M8 22h8"/></svg></div>
+        
+        <div style="display:flex; gap:45px;">
+            <div class="nav-btn" style="width:52px; height:52px;" onclick="flipCamera()"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
+            <div class="nav-btn" style="width:52px; height:52px; background:var(--ios-red); border:none;" onclick="history.back()"><svg viewBox="0 0 24 24" style="stroke:none; fill:#fff"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            <div class="nav-btn" style="width:52px; height:52px;" onclick="alert('已开启静音')"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18.5V22M8 22h8"/></svg></div>
         </div>
     </div>
 
-    <!-- 历史记录面板 -->
+    <!-- 面板层 -->
     <div id="history-overlay" onclick="toggleHistory(false)">
         <div class="history-panel" onclick="event.stopPropagation()">
-            <div style="font-weight:900; font-size:11px; letter-spacing:2px; color:#666; margin-bottom:20px;">HISTORY LOG</div>
-            <div class="history-list" id="history-list"></div>
+            <div style="font-weight:900; font-size:10px; color:#666; letter-spacing:2px; margin-bottom:20px;">HISTORY</div>
+            <div class="history-list" id="h-list"></div>
         </div>
     </div>
 
-    <!-- API 设置弹窗 -->
     <div class="modal-overlay" id="config-modal">
         <div class="config-card">
-            <h3>API 设定</h3>
-            <input type="text" class="config-input" id="api-url" placeholder="API 地址">
-            <input type="password" class="config-input" id="api-key" placeholder="API 密钥">
+            <h3>视频通话设置</h3>
+            <input type="text" class="config-input" id="api-url" placeholder="API 接口地址">
+            <input type="password" class="config-input" id="api-key" placeholder="API Key">
             <div style="display:flex; gap:8px;">
-                <select class="config-input" id="model-select" style="flex:1;"><option value="">请拉取模型...</option></select>
-                <button class="save-btn" style="width:80px; font-size:12px; background:#1c1c1e;" onclick="fetchModels()">拉取</button>
+                <select class="config-input" id="model-select" style="flex:1;"><option value="">拉取模型...</option></select>
+                <button onclick="fetchModels()" style="background:#000; color:#fff; border:none; padding:0 15px; border-radius:10px; font-size:12px;">拉取</button>
             </div>
-            <textarea class="config-input" id="api-persona" style="height:100px;" placeholder="Char 人设详情..."></textarea>
-            <button class="save-btn" onclick="saveSettings()">保存并关闭</button>
-            <button class="save-btn" style="background:#f2f2f7; color:#333; margin-top:-5px;" onclick="toggleConfig(false)">取消</button>
+            <textarea class="config-input" id="api-persona" style="height:80px;" placeholder="Char 人设..."></textarea>
+            <div class="color-row">
+                <span style="font-size:14px; font-weight:500;">字幕颜色</span>
+                <input type="color" id="subtitle-color-picker" onchange="updateSubtitleColor(this.value)">
+            </div>
+            <button class="save-btn" onclick="saveSettings()">保存并返回</button>
         </div>
     </div>
 
-    <canvas id="capture-canvas" style="display:none;"></canvas>
+    <canvas id="cap-canvas" style="display:none"></canvas>
 
     <script>
         const video = document.getElementById('user-video');
-        const canvas = document.getElementById('capture-canvas');
+        const canvas = document.getElementById('cap-canvas');
         const subtitleEl = document.getElementById('subtitle-el');
-        const ring = document.getElementById('thinking-ring');
+        const ring = document.getElementById('ring');
         let currentFacingMode = "user";
         let isCamOn = true;
-        let lastUserMessage = "";
+        let lastMsg = "";
 
-        async function acceptCall() {
-            document.getElementById('incoming-call').style.opacity = '0';
-            setTimeout(() => document.getElementById('incoming-call').style.display = 'none', 600);
-            document.getElementById('main-view').style.display = 'block';
-            document.getElementById('user-pip').style.display = 'block';
-            document.getElementById('top-nav').style.display = 'flex';
-            document.getElementById('bottom-wrap').style.display = 'flex';
-            startCamera();
-            startTimer();
-        }
-
+        // --- 核心：硬件摄像头切换 ---
         async function startCamera() {
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(t => t.stop());
+            }
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode }, audio: false });
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: currentFacingMode }, 
+                    audio: false 
+                });
                 video.srcObject = stream;
-            } catch (err) { alert("摄像头权限开启失败"); }
+                video.style.transform = (currentFacingMode === 'user') ? 'scaleX(-1)' : 'scaleX(1)';
+            } catch (e) { alert("摄像头启动失败"); }
         }
 
         function flipCamera() {
             currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
             startCamera();
-            video.style.transform = currentFacingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
         }
 
-        async function handleSend(customPrompt = null, isRegenerate = false) {
+        async function acceptCall() {
+            document.getElementById('incoming-call').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('incoming-call').style.display = 'none';
+                document.getElementById('main-view').style.display = 'block';
+                document.getElementById('user-pip').style.display = 'block';
+                document.getElementById('top-nav').style.display = 'flex';
+                document.getElementById('bottom-wrap').style.display = 'flex';
+            }, 600);
+            await startCamera();
+            startTimer();
+        }
+
+        // --- 逻辑：消息与 AI ---
+        async function handleSend(promptText = null, isRegen = false) {
             const input = document.getElementById('chat-input');
-            const text = customPrompt || input.value.trim();
-            if (!text && !customPrompt && !isRegenerate) return;
+            const text = promptText || input.value.trim();
+            if (!text && !promptText && !isRegen) return;
 
             const config = JSON.parse(localStorage.getItem('hajimi_video_api') || '{}');
             if (!config.key) return toggleConfig(true);
 
-            if (!isRegenerate && text.trim()) {
+            if (!isRegen && text.trim()) {
                 setSubtitle(text);
-                addToLog('User', text);
-                lastUserMessage = text;
+                addToLog('Me', text);
+                lastMsg = text;
             }
             input.value = ''; input.blur();
             document.getElementById('more-menu').style.display = 'none';
             ring.classList.add('active');
 
+            let url = (config.url || 'https://api.openai.com/v1').replace(/\/+$/, '') + '/chat/completions';
             const frame = getFrame();
-            let url = config.url || 'https://api.openai.com/v1';
-            if (!url.endsWith('/chat/completions')) url = url.replace(/\/+$/, '') + '/chat/completions';
 
-            const payload = {
-                model: config.model || "gpt-4o",
-                messages: [
-                    { role: "system", content: (config.persona || "") + "\n你正在和用户进行视频通话。请根据画面用简短口语回复，严禁描写动作。" },
-                    { role: "user", content: [
-                        { type: "text", text: isRegenerate ? `（重新回复上一条：${lastUserMessage}）` : text || "（静静地看着你）" },
-                        { type: "image_url", image_url: { url: `data:image/jpeg;base64,${frame}` } }
-                    ]}
-                ]
-            };
+            // 构建消息：如果摄像头关了，就发纯文字描述
+            let userContent = [];
+            if (isCamOn) {
+                userContent.push({ type: "text", text: isRegen ? `（重发上一条：${lastMsg}）` : text || "（看着我）" });
+                userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${frame}` } });
+            } else {
+                userContent = isRegen ? `（重发上一条：${lastMsg}）` : text || "（正在和你通话，但画面有点模糊）";
+            }
 
             try {
                 const res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.key}` },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        model: config.model || "gpt-4o",
+                        messages: [
+                            { role: "system", content: (config.persona || "") + "\n你正在和用户视频。请简洁回复对话，不要描写动作。" },
+                            { role: "user", content: userContent }
+                        ]
+                    })
                 });
                 const data = await res.json();
                 const aiText = data.choices[0].message.content;
@@ -309,26 +331,30 @@
 
         function handleAIReplyOnly() { handleSend(" "); }
 
-        function toggleMoreMenu() {
-            const m = document.getElementById('more-menu');
-            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
-        }
-
+        // --- 更多功能：话外音逻辑 ---
         function handleMoreAction(act) {
+            document.getElementById('more-menu').style.display = 'none';
             if (act === 'regenerate') handleSend(null, true);
-            if (act === 'describe') handleSend("请详细描述你现在在画面里看到了什么？");
             if (act === 'camera') {
                 isCamOn = !isCamOn;
                 video.srcObject.getTracks().forEach(t => t.enabled = isCamOn);
-                document.getElementById('cam-toggle-btn').innerText = isCamOn ? '关闭摄像头' : '开启摄像头';
+                document.getElementById('cam-toggle-label').innerText = isCamOn ? "关闭摄像头" : "开启摄像头";
+                document.getElementById('user-pip').style.opacity = isCamOn ? "1" : "0.3";
             }
-            if (act === 'color') {
-                const colors = ['#ffffff', '#ffeb3b', '#00e5ff', '#b2ff59'];
-                const cur = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-                const next = colors[(colors.indexOf(cur) + 1) % colors.length];
-                document.documentElement.style.setProperty('--text-color', next);
+            if (act === 'describe') {
+                if (!isCamOn) {
+                    // 摄像头关闭时的话外音 Prompt
+                    handleSend("（话外音：我刚才关掉了摄像头，你猜我现在在做什么？或者你觉得我现在是什么样子的？）");
+                } else {
+                    handleSend("（快夸夸我现在的样子，或者描述一下你看到的我）");
+                }
             }
-            if (act !== 'camera') document.getElementById('more-menu').style.display = 'none';
+        }
+
+        // --- 辅助逻辑 ---
+        function updateSubtitleColor(hex) {
+            document.documentElement.style.setProperty('--subtitle-color', hex);
+            localStorage.setItem('hajimi_video_subtitle_color', hex);
         }
 
         function getFrame() {
@@ -345,14 +371,15 @@
         }
 
         function addToLog(r, t) {
-            const list = document.getElementById('history-list');
-            const div = document.createElement('div');
-            div.className = 'h-item';
-            div.innerHTML = `<div class="h-role">${r}</div>${t}`;
-            list.appendChild(div);
+            const list = document.getElementById('h-list');
+            const d = document.createElement('div');
+            d.className = 'h-item';
+            d.innerHTML = `<div class="h-role">${r}</div>${t}`;
+            list.appendChild(d);
             list.scrollTop = list.scrollHeight;
         }
 
+        function toggleMoreMenu() { const m = document.getElementById('more-menu'); m.style.display = (m.style.display==='flex'?'none':'flex'); }
         function toggleHistory(s) { document.getElementById('history-overlay').classList.toggle('active', s); }
         function toggleConfig(s) { document.getElementById('config-modal').classList.toggle('active', s); }
 
@@ -370,7 +397,7 @@
                     opt.value = m.id || m; opt.innerText = m.id || m;
                     sel.appendChild(opt);
                 });
-            } catch (e) { sel.innerHTML = '<option>拉取失败</option>'; }
+            } catch (e) { sel.innerHTML = '<option>失败</option>'; }
         }
 
         function saveSettings() {
@@ -391,14 +418,17 @@
 
         window.onload = () => {
             const c = JSON.parse(localStorage.getItem('hajimi_video_api') || '{}');
-            if(c.url) document.getElementById('api-url').value = c.url;
-            if(c.key) document.getElementById('api-key').value = c.key;
-            if(c.persona) document.getElementById('api-persona').value = c.persona;
+            document.getElementById('api-url').value = c.url || '';
+            document.getElementById('api-key').value = c.key || '';
+            document.getElementById('api-persona').value = c.persona || '';
             if(c.model) {
                 const opt = document.createElement('option');
                 opt.value = c.model; opt.innerText = c.model;
                 document.getElementById('model-select').appendChild(opt);
             }
+            const savedColor = localStorage.getItem('hajimi_video_subtitle_color') || '#ffffff';
+            updateSubtitleColor(savedColor);
+            document.getElementById('subtitle-color-picker').value = savedColor;
         };
     </script>
 </body>
