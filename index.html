@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Video Call - Hajimi Edition</title>
+    <title>Video Call Pro - Hajimi</title>
     <style>
         :root {
             --ios-red: #ff3b30;
@@ -21,7 +21,7 @@
 
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #000; color: #fff; }
 
-        /* === 待接听界面 (层级最高) === */
+        /* === 待接听界面 === */
         #incoming-call {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(to bottom, #2c3e50, #000000);
@@ -36,31 +36,27 @@
         .incoming-name { font-size: 28px; font-weight: 600; margin-top: 20px; }
         .incoming-tip { font-size: 14px; opacity: 0.6; margin-top: 10px; }
         .call-actions { display: flex; gap: 80px; }
-        .action-btn {
-            display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer;
-        }
-        .icon-circle {
-            width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        }
+        .action-btn { display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; }
+        .icon-circle { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .icon-circle.decline { background: var(--ios-red); }
         .icon-circle.accept { background: var(--ios-green); }
         .icon-circle svg { width: 32px; height: 32px; fill: #fff; }
 
         /* === 视频背景 === */
         #video-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; display: none; }
-        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        video { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+        video.mirror { transform: scaleX(-1); } /* 仅前置摄像头开启镜像 */
 
         /* === 顶栏 === */
         .top-nav {
             position: absolute; top: calc(env(safe-area-inset-top) + 10px);
             left: 0; width: 100%; z-index: 50;
-            display: grid; grid-template-columns: 80px 1fr 80px; align-items: center; padding: 0 16px;
-            display: none; /* 初始隐藏 */
+            display: grid; grid-template-columns: 80px 1fr 80px; align-items: center; padding: 0 16px; display: none;
         }
         .nav-btn {
             width: 38px; height: 38px; border-radius: 50%;
             background: var(--glass); backdrop-filter: blur(15px); border: 0.5px solid var(--glass-border);
-            display: flex; align-items: center; justify-content: center;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
         .nav-btn svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2; }
         .center-info { text-align: center; }
@@ -69,7 +65,7 @@
 
         /* === 字幕消息 === */
         .subtitle-area {
-            position: absolute; bottom: 22%; left: 10%; right: 10%;
+            position: absolute; bottom: 25%; left: 10%; right: 10%;
             z-index: 100; text-align: center; pointer-events: none;
             min-height: 60px; display: flex; align-items: center; justify-content: center;
         }
@@ -87,23 +83,37 @@
             flex-direction: column; align-items: center; gap: 20px;
         }
         .input-bar {
-            width: 85%; max-width: 400px; height: 44px;
-            background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(20px);
-            border-radius: 22px; border: 0.5px solid rgba(255,255,255,0.2);
-            display: flex; align-items: center; padding: 0 6px 0 16px;
+            width: 90%; max-width: 450px; height: 48px;
+            background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(25px);
+            border-radius: 24px; border: 0.5px solid rgba(255,255,255,0.25);
+            display: flex; align-items: center; padding: 0 6px 0 16px; gap: 8px;
         }
         .chat-input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 15px; }
-        .send-mini-btn {
-            width: 32px; height: 32px; border-radius: 50%; background: #fff;
-            display: flex; align-items: center; justify-content: center;
+        
+        /* 回复键 (闪烁图标) */
+        .reply-btn {
+            width: 36px; height: 36px; border-radius: 50%; background: var(--glass);
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
-        .send-mini-btn svg { width: 16px; height: 16px; stroke: #000; fill: none; stroke-width: 2.5; }
-        .btn-hangup { width: 56px; height: 56px; border-radius: 50%; background: var(--ios-red); display: flex; align-items: center; justify-content: center; }
+        .reply-btn svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2; }
+
+        .send-mini-btn {
+            width: 36px; height: 36px; border-radius: 50%; background: #fff;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .send-mini-btn svg { width: 18px; height: 18px; stroke: #000; fill: none; stroke-width: 2.5; }
+
+        /* 控制按键 */
+        .controls-row { display: flex; align-items: center; gap: 30px; }
+        .ctrl-btn { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .btn-secondary { background: var(--glass); border: 0.5px solid var(--glass-border); backdrop-filter: blur(15px); }
+        .btn-hangup { background: var(--ios-red); }
+        .ctrl-btn svg { width: 24px; height: 24px; fill: none; stroke: #fff; stroke-width: 2; }
 
         /* === 历史记录 (侧滑) === */
         .history-drawer {
             position: fixed; top: 0; left: 0; width: 80%; height: 100%;
-            background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(25px);
+            background: rgba(20, 20, 20, 0.92); backdrop-filter: blur(25px);
             z-index: 2000; transform: translateX(-100%); transition: transform 0.4s ease;
             display: flex; flex-direction: column; padding: 60px 20px 40px;
         }
@@ -120,9 +130,10 @@
         .modal-overlay.active { display: flex; }
         .config-card {
             width: 100%; max-width: 320px; background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px; padding: 24px; color: #1c1c1e; display: flex; flex-direction: column; gap: 14px;
+            border-radius: 24px; padding: 24px; color: #1c1c1e; display: flex; flex-direction: column; gap: 14px;
         }
-        .config-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; background: #f5f5f7; font-size: 14px; outline: none; }
+        .config-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; background: #f5f5f7; font-size: 14px; outline: none; }
+        .tag-btn { background: #000; color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 12px; text-align: center; cursor: pointer; display: inline-block; }
         .save-btn { width: 100%; padding: 14px; border-radius: 12px; background: #000; color: #fff; font-weight: 600; border: none; }
 
         canvas#capture-canvas { display: none; }
@@ -166,26 +177,39 @@
     <div class="bottom-wrap" id="bottom-wrap">
         <div class="input-bar">
             <input type="text" class="chat-input" id="chat-input" placeholder="和TA说点什么..." autocomplete="off">
+            <div class="reply-btn" title="回复" onclick="handleAIReplyOnly()">
+                <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
             <div class="send-mini-btn" onclick="handleSend()"><svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></div>
         </div>
-        <div class="btn-hangup" onclick="history.back()"><svg viewBox="0 0 24 24" width="24" height="24" fill="#fff"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+        <div class="controls-row">
+            <div class="ctrl-btn btn-secondary" onclick="flipCamera()"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
+            <div class="ctrl-btn btn-hangup" onclick="history.back()"><svg viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            <div class="ctrl-btn btn-secondary" onclick="alert('已静音')"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18.5V22M8 22h8"/></svg></div>
+        </div>
+    </div>
+
+    <!-- 配置面板 -->
+    <div class="modal-overlay" id="config-modal">
+        <div class="config-card">
+            <h3 style="text-align:center">API & Model</h3>
+            <input type="text" class="config-input" id="api-url" placeholder="API URL">
+            <input type="password" class="config-input" id="api-key" placeholder="API Key">
+            
+            <div style="display:flex; gap:8px;">
+                <select class="config-input" id="model-select" style="flex:1;"><option value="">请先拉取模型...</option></select>
+                <div class="tag-btn" onclick="fetchModels()">拉取</div>
+            </div>
+
+            <textarea class="config-input" id="api-persona" style="height:80px" placeholder="人设设定..."></textarea>
+            <button class="save-btn" onclick="saveSettings()">保存配置</button>
+            <button class="save-btn" style="background:#eee; color:#333; margin-top:-5px" onclick="toggleConfig(false)">取消</button>
+        </div>
     </div>
 
     <div class="history-drawer" id="history-drawer" onclick="toggleHistory(false)">
         <div style="font-weight:800; font-size:12px; margin-bottom:20px; letter-spacing:2px; color:#666;">HISTORY LOG</div>
         <div class="history-list" id="history-list" onclick="event.stopPropagation()"></div>
-    </div>
-
-    <div class="modal-overlay" id="config-modal">
-        <div class="config-card">
-            <h3 style="text-align:center">API 设置</h3>
-            <input type="text" class="config-input" id="api-url" placeholder="API URL">
-            <input type="password" class="config-input" id="api-key" placeholder="API Key">
-            <input type="text" class="config-input" id="api-model" placeholder="模型名称 (gpt-4o)">
-            <textarea class="config-input" id="api-persona" style="height:80px" placeholder="输入人设描述..."></textarea>
-            <button class="save-btn" onclick="saveSettings()">保存配置</button>
-            <button class="save-btn" style="background:#eee; color:#333; margin-top:-5px" onclick="toggleConfig(false)">取消</button>
-        </div>
     </div>
 
     <canvas id="capture-canvas"></canvas>
@@ -196,66 +220,90 @@
         const subtitleEl = document.getElementById('subtitle-el');
         const chatInput = document.getElementById('chat-input');
         
-        // --- 1. 接听逻辑 ---
-        async function acceptCall() {
-            document.getElementById('incoming-call').style.opacity = '0';
-            setTimeout(() => document.getElementById('incoming-call').style.display = 'none', 500);
-            
-            // 显示主界面
-            document.getElementById('video-container').style.display = 'block';
-            document.getElementById('top-nav').style.display = 'grid';
-            document.getElementById('bottom-wrap').style.display = 'flex';
+        let currentFacingMode = "user"; // 'user' 或 'environment'
+        let currentStream = null;
 
-            // 请求摄像头 (由于是点击触发，拦截率大大降低)
+        // --- 1. 摄像头与翻转逻辑 ---
+        async function startCamera(mode) {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "user" }, 
-                    audio: false 
-                });
-                video.srcObject = stream;
-                startTimer();
+                const constraints = { video: { facingMode: mode }, audio: false };
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = currentStream;
+                // 前置摄像头需要镜像，后置不需要
+                video.classList.toggle('mirror', mode === 'user');
             } catch (err) {
-                alert("权限请求失败：请确保没有其他应用遮挡屏幕，并清理悬浮窗。");
+                alert("摄像头启动失败: " + err.message);
             }
         }
 
-        // --- 2. 视觉捕获 ---
+        function flipCamera() {
+            currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+            startCamera(currentFacingMode);
+        }
+
+        async function acceptCall() {
+            document.getElementById('incoming-call').style.opacity = '0';
+            setTimeout(() => document.getElementById('incoming-call').style.display = 'none', 500);
+            document.getElementById('video-container').style.display = 'block';
+            document.getElementById('top-nav').style.display = 'grid';
+            document.getElementById('bottom-wrap').style.display = 'flex';
+            await startCamera(currentFacingMode);
+            startTimer();
+        }
+
+        // --- 2. 模型拉取逻辑 ---
+        async function fetchModels() {
+            const url = document.getElementById('api-url').value.trim();
+            const key = document.getElementById('api-key').value.trim();
+            if (!url || !key) return alert("请先填写 URL 和 Key");
+
+            let fetchUrl = url.replace(/\/+$/, '') + '/models';
+            const select = document.getElementById('model-select');
+            select.innerHTML = '<option>拉取中...</option>';
+
+            try {
+                const res = await fetch(fetchUrl, { headers: { 'Authorization': `Bearer ${key}` } });
+                const data = await res.json();
+                let models = data.data ? data.data.map(m => m.id) : data.map(m => m.id || m);
+                
+                select.innerHTML = '';
+                models.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m; opt.textContent = m;
+                    select.appendChild(opt);
+                });
+                alert("模型列表已更新");
+            } catch (e) {
+                select.innerHTML = '<option value="">拉取失败</option>';
+            }
+        }
+
+        // --- 3. 核心 API 发送逻辑 ---
         function getFrame() {
             const ctx = canvas.getContext('2d');
             canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+            if (currentFacingMode === 'user') {
+                ctx.translate(canvas.width, 0); ctx.scale(-1, 1); // 镜像捕捉
+            }
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             return canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
         }
 
-        // --- 3. 字幕与历史 ---
-        function setSubtitle(text) {
-            subtitleEl.classList.remove('active');
-            setTimeout(() => {
-                subtitleEl.innerText = text;
-                subtitleEl.classList.add('active');
-            }, 300);
-        }
-
-        function addToLog(role, text) {
-            const list = document.getElementById('history-list');
-            const item = document.createElement('div');
-            item.className = 'history-item';
-            item.innerHTML = `<div class="h-role">${role}</div><div class="h-content">${text}</div>`;
-            list.appendChild(item);
-            list.scrollTop = list.scrollHeight;
-        }
-
-        // --- 4. API 请求 ---
-        async function handleSend() {
-            const text = chatInput.value.trim();
-            if(!text) return;
+        async function handleSend(customText = null) {
+            const text = customText || chatInput.value.trim();
+            if(!text && !customText) return;
 
             const config = JSON.parse(localStorage.getItem('hajimi_video_api') || '{}');
             if(!config.key) return alert("请设置 API Key");
 
-            setSubtitle(text);
-            addToLog('User', text);
+            // UI 反馈
+            if (text) {
+                setSubtitle(text);
+                addToLog('User', text);
+            }
             chatInput.value = '';
             chatInput.blur();
 
@@ -266,9 +314,9 @@
             const payload = {
                 model: config.model || "gpt-4o",
                 messages: [
-                    { role: "system", content: (config.persona || "你正在和用户视频。") + "请观察画面回复，只输出对话，不要动作描述。" },
+                    { role: "system", content: (config.persona || "你正在和用户视频。") + "请根据画面回复，只输出对话。" },
                     { role: "user", content: [
-                        { type: "text", text: text },
+                        { type: "text", text: text || "（看着我）" },
                         { type: "image_url", image_url: { url: `data:image/jpeg;base64,${img}` } }
                     ]}
                 ],
@@ -284,18 +332,39 @@
                 const data = await res.json();
                 const aiText = data.choices[0].message.content;
                 setTimeout(() => { setSubtitle(aiText); addToLog('Char', aiText); }, 600);
-            } catch (e) { setSubtitle("信号不佳..."); }
+            } catch (e) { setSubtitle("连接超时..."); }
         }
 
-        // --- 5. UI 控制 ---
+        // 回复键逻辑：即使没写字，也让AI看图说话
+        function handleAIReplyOnly() {
+            handleSend(" "); // 发送空格触发观察
+        }
+
+        // --- 4. UI 辅助 ---
+        function setSubtitle(t) {
+            subtitleEl.classList.remove('active');
+            setTimeout(() => { subtitleEl.innerText = t; subtitleEl.classList.add('active'); }, 300);
+        }
+        function addToLog(r, t) {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `<div class="h-role">${r}</div><div class="h-content">${t}</div>`;
+            document.getElementById('history-list').appendChild(item);
+            document.getElementById('history-list').scrollTop = document.getElementById('history-list').scrollHeight;
+        }
         function toggleHistory(s) { document.getElementById('history-drawer').classList.toggle('active', s); }
         function toggleConfig(s) { document.getElementById('config-modal').classList.toggle('active', s); }
+        
         function saveSettings() {
-            const c = { url: id('api-url').value, key: id('api-key').value, model: id('api-model').value, persona: id('api-persona').value };
+            const c = { 
+                url: document.getElementById('api-url').value, 
+                key: document.getElementById('api-key').value, 
+                model: document.getElementById('model-select').value, 
+                persona: document.getElementById('api-persona').value 
+            };
             localStorage.setItem('hajimi_video_api', JSON.stringify(c));
             toggleConfig(false);
         }
-        function id(name) { return document.getElementById(name); }
 
         function startTimer() {
             let s = 0;
@@ -303,14 +372,21 @@
                 s++;
                 let m = Math.floor(s/60).toString().padStart(2,'0');
                 let sec = (s%60).toString().padStart(2,'0');
-                id('call-timer').innerText = `${m}:${sec}`;
+                document.getElementById('call-timer').innerText = `${m}:${sec}`;
             }, 1000);
         }
 
         window.onload = () => {
             const c = JSON.parse(localStorage.getItem('hajimi_video_api') || '{}');
-            id('api-url').value = c.url || ''; id('api-key').value = c.key || '';
-            id('api-model').value = c.model || ''; id('api-persona').value = c.persona || '';
+            document.getElementById('api-url').value = c.url || '';
+            document.getElementById('api-key').value = c.key || '';
+            if(c.model) {
+                const opt = document.createElement('option');
+                opt.value = c.model; opt.textContent = c.model;
+                document.getElementById('model-select').appendChild(opt);
+                document.getElementById('model-select').value = c.model;
+            }
+            document.getElementById('api-persona').value = c.persona || '';
         };
         chatInput.addEventListener('keypress', e => { if(e.key === 'Enter') handleSend(); });
     </script>
